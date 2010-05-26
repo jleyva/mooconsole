@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>User: Create users</name>
+ <description>Create new users</description>
+ <wsfname>moodle_user_create_users</wsfname>
+ <params>
+ 	<param>
+	 <name>users</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="text">username</attribute>
+	  <attribute type="text">password</attribute>
+	  <attribute type="text">firstname</attribute>
+	  <attribute type="text">lastname</attribute>
+	  <attribute type="text">email</attribute>
+	  <attribute type="text">auth</attribute>
+	  <attribute type="text">idnumber</attribute>
+	  <attribute type="int">emailstop</attribute>
+	  <attribute type="text">lang</attribute>
+	  <attribute type="text">theme</attribute>
+	  <attribute type="text">timezone</attribute>
+	  <attribute type="int">mailformat</attribute>
+	  <attribute type="text">description</attribute>
+	  <attribute type="text">city</attribute>
+	  <attribute type="text">country</attribute>
+     </object>
+	</param>
+ </params>
+</ws>

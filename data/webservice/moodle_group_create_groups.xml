@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Group: Create groups</name>
+ <description>Create new groups in courses</description>
+ <wsfname>moodle_group_create_groups</wsfname>
+ <params>
+ 	<param>
+	 <name>groups</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="int">courseid</attribute>
+	  <attribute type="text">name</attribute>
+	  <attribute type="text">description</attribute>
+	  <attribute type="text">enrolmentkey</attribute>
+     </object>
+	</param>
+ </params>
+</ws>

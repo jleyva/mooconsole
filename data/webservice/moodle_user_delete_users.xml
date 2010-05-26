@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>User: Delete users by id</name>
+ <description>Delete users using mdl_user.id value</description>
+ <wsfname>moodle_user_delete_users</wsfname>
+ <params>
+ 	<param>
+	 <name>userids</name>
+ 	 <structure>list</structure> 
+	 <type>int</type>
+	</param>
+ </params>
+</ws>

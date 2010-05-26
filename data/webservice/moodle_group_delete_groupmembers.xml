@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Group: Deletegroup members</name>
+ <description>Delete members from a group</description>
+ <wsfname>moodle_group_delete_groupmembers</wsfname>
+ <params>
+ 	<param>
+	 <name>members</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="int">groupid</attribute>
+	  <attribute type="int">userid</attribute>
+	 </object>
+	</param>
+ </params>
+</ws>

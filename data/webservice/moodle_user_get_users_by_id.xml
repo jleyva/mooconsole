@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>User: Get users by id</name>
+ <description>Get users by the mdl_user.id value</description>
+ <wsfname>moodle_user_get_users_by_id</wsfname>
+ <params>
+ 	<param>
+	 <name>userids</name>
+ 	 <structure>list</structure> 
+	 <type>int</type>
+	</param>
+ </params>
+</ws>

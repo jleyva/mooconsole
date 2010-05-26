@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Group: Get groups by id</name>
+ <description>Get groups by id</description>
+ <wsfname>moodle_group_get_groups</wsfname>
+ <params>
+ 	<param>
+	 <name>groupids</name>
+ 	 <structure>list</structure> 
+	 <type>int</type>
+	</param>
+ </params>
+</ws>

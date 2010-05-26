@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Enrolment: Role assign</name>
+ <description>Assing roles to users</description>
+ <wsfname>moodle_enrol_role_assign</wsfname>
+ <params>
+ 	<param>
+	 <name>enrolments</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="text">roleid</attribute>
+	  <attribute type="text">userid</attribute>
+	  <attribute type="text">contextid</attribute>
+	  <attribute type="text">timestart</attribute>
+	  <attribute type="text">timeend</attribute>
+     </object>
+	</param>
+ </params>
+</ws>

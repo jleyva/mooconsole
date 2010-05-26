@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Group: Add group members</name>
+ <description>Add members to a group</description>
+ <wsfname>moodle_group_add_groupmembers</wsfname>
+ <params>
+ 	<param>
+	 <name>members</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="int">groupid</attribute>
+	  <attribute type="int">userid</attribute>
+	 </object>
+	</param>
+ </params>
+</ws>

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Enrolment: Role unassign</name>
+ <description>Unassing roles to users</description>
+ <wsfname>moodle_enrol_role_unassign</wsfname>
+ <params>
+ 	<param>
+	 <name>unenrolments</name>
+ 	 <structure>list</structure> 
+	 <type>object</type>
+	 <object>
+	  <attribute type="text">roleid</attribute>
+	  <attribute type="text">userid</attribute>
+	  <attribute type="text">contextid</attribute>
+     </object>
+	</param>
+ </params>
+</ws>

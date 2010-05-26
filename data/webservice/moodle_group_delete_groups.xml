@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ws>
+ <name>Group: Delete groups by id</name>
+ <description>Delete groups by id</description>
+ <wsfname>moodle_group_delete_groups</wsfname>
+ <params>
+ 	<param>
+	 <name>groupids</name>
+ 	 <structure>list</structure> 
+	 <type>int</type>
+	</param>
+ </params>
+</ws>
