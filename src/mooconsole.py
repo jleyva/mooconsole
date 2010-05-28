@@ -25,9 +25,11 @@ import threading
 import csv
 import codecs
 import mbrowser
+import minfogatherer
 import re
 import logging
 import logging.handlers
+import string
 
 class MoodleBrowserDialog(wx.Dialog):
     def __init__(self, *args, **kwds):
@@ -657,6 +659,9 @@ class MyMainFrame(wx.Frame):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
         self.notebook_1 = wx.Notebook(self, -1, style=0)
+        self.notebook_1_pane_4 = wx.Panel(self.notebook_1, -1)
+        self.notebook_reports = wx.Notebook(self.notebook_1_pane_4, -1, style=0)
+        self.notebook_3_pane_1 = wx.Panel(self.notebook_reports, -1)
         self.notebook_1_pane_3 = wx.Panel(self.notebook_1, -1)
         self.notebook_1_pane_2 = wx.Panel(self.notebook_1, -1)
         self.notebook_1_pane_1 = wx.Panel(self.notebook_1, -1)
@@ -727,6 +732,7 @@ class MyMainFrame(wx.Frame):
         self.button_browse = wx.Button(self.notebook_1_pane_3, -1, "Browse Moodle Site")
         self.button_upload_files = wx.Button(self.notebook_1_pane_3, -1, "Upload Files")
         self.list_ctrl_uploading = wx.ListCtrl(self.notebook_1_pane_3, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.grid_report_information = wx.grid.Grid(self.notebook_3_pane_1, -1, size=(1, 1))
 
         self.__set_properties()
         self.__do_layout()
@@ -757,6 +763,7 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnRemoveFileButtonClick, self.button_remove_files)
         self.Bind(wx.EVT_BUTTON, self.OnFileBrowserButtonClick, self.button_browse)
         self.Bind(wx.EVT_BUTTON, self.OnUploadFilesButtonClick, self.button_upload_files)
+        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnMainNoteBookChanged, self.notebook_1)
         # end wxGlade
 
     def __set_properties(self):
@@ -777,6 +784,7 @@ class MyMainFrame(wx.Frame):
         self.button_upload_files.SetMinSize((150, -1))
         self.button_upload_files.SetFont(wx.Font(8, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         self.button_upload_files.Enable(False)
+        self.grid_report_information.CreateGrid(0, 0)
         # end wxGlade
 
     def __do_layout(self):
@@ -784,6 +792,8 @@ class MyMainFrame(wx.Frame):
         sizer_2 = wx.BoxSizer(wx.VERTICAL)
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
+        sizer_8 = wx.BoxSizer(wx.VERTICAL)
+        sizer_9 = wx.BoxSizer(wx.VERTICAL)
         sizer_30 = wx.BoxSizer(wx.VERTICAL)
         sizer_31 = wx.StaticBoxSizer(self.sizer_31_staticbox, wx.HORIZONTAL)
         sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
@@ -844,9 +854,15 @@ class MyMainFrame(wx.Frame):
         sizer_31.Add(self.list_ctrl_uploading, 1, wx.EXPAND, 0)
         sizer_30.Add(sizer_31, 1, wx.EXPAND, 0)
         self.notebook_1_pane_3.SetSizer(sizer_30)
+        sizer_9.Add(self.grid_report_information, 1, wx.ALL|wx.EXPAND, 8)
+        self.notebook_3_pane_1.SetSizer(sizer_9)
+        self.notebook_reports.AddPage(self.notebook_3_pane_1, "Site Information")
+        sizer_8.Add(self.notebook_reports, 1, wx.EXPAND, 0)
+        self.notebook_1_pane_4.SetSizer(sizer_8)
         self.notebook_1.AddPage(self.notebook_1_pane_1, "Main")
         self.notebook_1.AddPage(self.notebook_1_pane_2, "Web services")
         self.notebook_1.AddPage(self.notebook_1_pane_3, "File uploader")
+        self.notebook_1.AddPage(self.notebook_1_pane_4, "Reports")
         sizer_1.Add(self.notebook_1, 1, wx.ALL|wx.EXPAND, 4)
         sizer_3.Add(sizer_1, 2, wx.EXPAND, 0)
         sizer_2.Add(sizer_3, 1, wx.ALL|wx.EXPAND, 4)
@@ -916,13 +932,15 @@ class MyMainFrame(wx.Frame):
            
         if int(self.config.preferences['url_monitor_time']) > 0:
             self.logger.debug('Starting URL Monitor, every %s secs',self.config.preferences['url_monitor_time'])
-            p = murlmonitor.URLCheckThread(self)
-            p.start()
+            pu = murlmonitor.URLCheckThread(self)
+            pu.start()
             
         if int(self.config.preferences['site_gatherer_time']) > 0:
             self.logger.debug('Starting Site Info Gatherer, every %s secs',self.config.preferences['site_gatherer_time'])
+            pg = minfogatherer.SiteInfoGatherer(self.config, self.msites)
+            pg.start()
         
-        self.logger.debug('URL and Gatherer started')
+        self.logger.debug('URL and Site Info Gatherer started')
         
         self.text_ctrl_filter.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         
@@ -943,8 +961,12 @@ class MyMainFrame(wx.Frame):
     def OnTimerEvent(self,evt):
         #TODO: All, get last execution time, etc...
         if int(self.config.preferences['url_monitor_time']) > 0:
-            p = murlmonitor.URLCheckThread(self)
-            p.start()
+            pu = murlmonitor.URLCheckThread(self)
+            pu.start()
+            
+        if int(self.config.preferences['site_gatherer_time']) > 0:
+            pg = minfogatherer.SiteInfoGatherer(self.config, self.msites)
+            pg.start()
 
 
     def OnNewSiteButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
@@ -1262,7 +1284,11 @@ class MyMainFrame(wx.Frame):
 
             self.htmlwindow_info.SetPage(html_page)
         else:
-            self.htmlwindow_info.SetPage(html_page)    
+            self.htmlwindow_info.SetPage(html_page)   
+            
+        
+        if self.notebook_1.GetSelection() == 3:
+            self.LoadSiteInfoReport()
             
 
     def OnButtonRefreshClick(self, event): # wxGlade: MyMainFrame.<event_handler>
@@ -1568,6 +1594,64 @@ class MyMainFrame(wx.Frame):
             writer.writerows(self.current_ws_response)
         
         dlg.Destroy()
+        
+    def LoadSiteInfoReport(self):
+        self.grid_report_information.ClearGrid()
+        if self.grid_report_information.GetNumberRows() > 0:
+            self.grid_report_information.DeleteRows(0,self.grid_report_information.GetNumberRows())
+        
+        index = self.list_ctrl_sites.GetFirstSelected()
+        
+        if index != -1:
+            site_list = []
+            while index != -1:
+                site_id = self.list_ctrl_sites.GetItemData(index)
+                site_list.append(str(site_id))
+                index = self.list_ctrl_sites.GetNextSelected(index)
+            
+            con = sqlite3.connect(self.config.db_path)    
+            def dict_factory(cursor, row):
+                    d = {}
+                    for idx, col in enumerate(cursor.description):
+                        d[col[0]] = row[idx]
+                    return d            
+                
+            con.row_factory = dict_factory
+            c = con.cursor()
+
+            c.execute('SELECT * FROM site_info WHERE siteid IN ('+string.join(site_list,',')+') ORDER BY DATE DESC')
+            
+            add_cols = False
+            if self.grid_report_information.GetNumberCols() == 0:
+                add_cols = True
+            
+            site_info = ['sitename','date','version','release','courses','users','roleassignments','courseupdaters','posts','questions','resources','lang']
+            site_name_cache = {}
+            
+            for row_number,row in enumerate(c):
+                self.grid_report_information.AppendRows(1)
+                
+                if row['siteid'] not in site_name_cache:
+                    s = MoodleSite(self.config,db_id=row['siteid'])
+                    site_name_cache[row['siteid']] = s.name
+                    row['sitename'] = s.name
+                else:
+                    row['sitename'] = site_name_cache[row['siteid']]
+                
+                for col_number,col_name in enumerate(site_info):
+                    if row_number == 0:
+                        if add_cols:
+                            self.grid_report_information.InsertCols(col_number,1)
+                            self.grid_report_information.SetColLabelValue(col_number,col_name)                                        
+                    
+                    self.grid_report_information.SetCellValue(row_number,col_number,str(row[col_name]))
+            
+            for i in range(0,self.grid_report_information.GetNumberCols()):
+                self.grid_report_information.AutoSizeColumn(i)         
+
+    def OnMainNoteBookChanged(self, event): # wxGlade: MyMainFrame.<event_handler>
+        self.LoadSiteInfoReport()
+        
 
 # end of class MyMainFrame
 

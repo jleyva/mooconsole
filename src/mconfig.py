@@ -35,8 +35,8 @@ class MPathHelper(object):
         if context == ('mac', 'frozen'):
             DATA = os.path.join(APP_ROOT, 'Contents','Resources') # py2app
         elif context == ('windows', 'frozen'):
-            self.path_data = os.path.join(os.getcwd,'data')
-            self.path_user_data = os.path.join(os.getcwd,'user_data')
+            self.path_data = os.path.join(os.getcwd(),'data')
+            self.path_user_data = os.path.join(os.getcwd(),'user_data')
         elif context == ('linux', 'package'):
             DATA = os.path.join(sys.prefix, 'share', APP_NAME) # linux
         else:
