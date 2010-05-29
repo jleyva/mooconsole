@@ -67,6 +67,10 @@ class MConfig(object):
         self.preferences['max_log_file_size'] = '1048576'
         self.preferences['url_monitor_time'] = '0'
         self.preferences['site_gatherer_time'] = '0'
+        
+        self.preferences['last_monitor_exec'] = '0'
+        self.preferences['last_gatherer_exec'] = '0'        
+        
         self.reload()
         
 

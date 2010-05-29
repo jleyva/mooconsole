@@ -346,11 +346,9 @@ class PreferencesDialog(wx.Dialog):
         wx.Dialog.__init__(self, *args, **kwds)
         self.sizer_20_staticbox = wx.StaticBox(self, -1, "Scheluded Tasks:")
         self.label_7 = wx.StaticText(self, -1, "Site information gatherer:")
-        self.combo_box_1 = wx.ComboBox(self, -1, choices=["Disabled", "Only first time", "Every day", "Every week", "Every month"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.combo_box_info_gatherer = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN|wx.CB_READONLY)
         self.label_13 = wx.StaticText(self, -1, "URL Monitor:")
-        self.combo_box_2 = wx.ComboBox(self, -1, choices=["Disabled", "Every 5 minutes", "Every 15 minutes", "Every 30 minutes", "Every hour"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        self.label_14 = wx.StaticText(self, -1, "Performance gatherer:")
-        self.combo_box_3 = wx.ComboBox(self, -1, choices=["Disabled", "Every 5 minutes", "Every 15 minutes", "Every 30 minutes", "Every hour", "Every day"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.combo_box_url_monitor = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN|wx.CB_READONLY)
         self.button_save = wx.Button(self, wx.ID_OK, "Save")
         self.button_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
 
@@ -361,9 +359,6 @@ class PreferencesDialog(wx.Dialog):
     def __set_properties(self):
         # begin wxGlade: PreferencesDialog.__set_properties
         self.SetTitle("dialog_4")
-        self.combo_box_1.SetSelection(-1)
-        self.combo_box_2.SetSelection(-1)
-        self.combo_box_3.SetSelection(-1)
         # end wxGlade
 
     def __do_layout(self):
@@ -371,18 +366,16 @@ class PreferencesDialog(wx.Dialog):
         sizer_17 = wx.BoxSizer(wx.VERTICAL)
         sizer_18 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_20 = wx.StaticBoxSizer(self.sizer_20_staticbox, wx.HORIZONTAL)
-        grid_sizer_4 = wx.GridSizer(3, 2, 0, 0)
+        grid_sizer_4 = wx.BoxSizer(wx.VERTICAL)
         grid_sizer_4.Add(self.label_7, 0, 0, 0)
-        grid_sizer_4.Add(self.combo_box_1, 0, 0, 0)
+        grid_sizer_4.Add(self.combo_box_info_gatherer, 0, 0, 0)
         grid_sizer_4.Add(self.label_13, 0, 0, 0)
-        grid_sizer_4.Add(self.combo_box_2, 0, 0, 0)
-        grid_sizer_4.Add(self.label_14, 0, 0, 0)
-        grid_sizer_4.Add(self.combo_box_3, 0, 0, 0)
+        grid_sizer_4.Add(self.combo_box_url_monitor, 0, 0, 0)
         sizer_20.Add(grid_sizer_4, 0, wx.EXPAND, 0)
         sizer_17.Add(sizer_20, 1, wx.EXPAND, 0)
         sizer_18.Add(self.button_save, 0, 0, 0)
         sizer_18.Add(self.button_cancel, 0, 0, 0)
-        sizer_17.Add(sizer_18, 1, wx.EXPAND, 0)
+        sizer_17.Add(sizer_18, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 0)
         self.SetSizer(sizer_17)
         sizer_17.Fit(self)
         self.Layout()
@@ -694,6 +687,8 @@ class MyMainFrame(wx.Frame):
         wxglade_tmp_menu.AppendItem(self.menu_xref)
         self.frame_1_menubar.Append(wxglade_tmp_menu, "Links")
         wxglade_tmp_menu = wx.Menu()
+        self.menu_preferences = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Preferences", "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.AppendItem(self.menu_preferences)
         self.menu_change_mp = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Change Master Password", "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.menu_change_mp)
         self.frame_1_menubar.Append(wxglade_tmp_menu, "Options")
@@ -745,6 +740,7 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnSearchDocsMenuClick, self.menu_search_docs)
         self.Bind(wx.EVT_MENU, self.OnMoodleTrackerMenuClick, self.menu_moodle_tracker)
         self.Bind(wx.EVT_MENU, self.OnMenuXrefClick, self.menu_xref)
+        self.Bind(wx.EVT_MENU, self.OnPreferencesMenuClick, self.menu_preferences)
         self.Bind(wx.EVT_MENU, self.OnChangeMPMenuClick, self.menu_change_mp)
         self.Bind(wx.EVT_MENU, self.OnWebsiteMenuClick, self.menu_website)
         self.Bind(wx.EVT_MENU, self.OnAboutMenuClick, self.menu_about)
@@ -1252,8 +1248,33 @@ class MyMainFrame(wx.Frame):
         self.ChangeMP()
 
     def OnPreferencesMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnPreferencesMenuClick' not implemented"
-        event.Skip()
+        dlg = PreferencesDialog(self, -1, 'Site Browser')
+        dlg.CenterOnScreen()
+        dlg.SetTitle('Preferences')   
+        
+        gatherer_list = [('Disabled','0'),('Every 1 hour','3600'),('Every 6 hours','21600'),('Every day','86400')]
+        monitor_list = [('Disabled','0'),('Every 5 mins','300'),( 'Every 10 minutes','600'),( 'Every 15 minutes','900'),( 'Every 30 minutes','1800')]
+        
+        
+        for name,val in gatherer_list:
+            dlg.combo_box_info_gatherer.Append(name,val)
+            print val, self.config.preferences['site_gatherer_time']            
+            if int(self.config.preferences['site_gatherer_time']) == int(val):
+                dlg.combo_box_info_gatherer.SetValue(name)
+            
+        for name,val in monitor_list:
+            dlg.combo_box_url_monitor.Append(name,val)
+            print val, self.config.preferences['url_monitor_time']
+            if int(self.config.preferences['url_monitor_time']) == int(val):
+                dlg.combo_box_url_monitor.SetValue(name)
+                        
+        if dlg.ShowModal() == wx.ID_OK:
+            self.config.preferences['url_monitor_time'] = dlg.combo_box_url_monitor.GetClientData(dlg.combo_box_url_monitor.GetSelection())
+            self.config.preferences['site_gatherer_time'] = dlg.combo_box_info_gatherer.GetClientData(dlg.combo_box_info_gatherer.GetSelection())
+            
+            self.config.save()
+        
+        dlg.Destroy()
 
     def OnWebsiteMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         webbrowser.open('http://sites.google.com/site/mooconsole')
