@@ -31,6 +31,7 @@ import re
 import logging
 import logging.handlers
 import string
+from time import sleep, strftime, localtime
 
 class MoodleBrowserDialog(wx.Dialog):
     def __init__(self, *args, **kwds):
@@ -655,6 +656,7 @@ class MyMainFrame(wx.Frame):
         self.notebook_1 = wx.Notebook(self, -1, style=0)
         self.notebook_1_pane_4 = wx.Panel(self.notebook_1, -1)
         self.notebook_reports = wx.Notebook(self.notebook_1_pane_4, -1, style=0)
+        self.notebook_reports_pane_2 = wx.Panel(self.notebook_reports, -1)
         self.notebook_3_pane_1 = wx.Panel(self.notebook_reports, -1)
         self.notebook_1_pane_3 = wx.Panel(self.notebook_1, -1)
         self.notebook_1_pane_2 = wx.Panel(self.notebook_1, -1)
@@ -729,7 +731,8 @@ class MyMainFrame(wx.Frame):
         self.button_upload_files = wx.Button(self.notebook_1_pane_3, -1, "Upload Files")
         self.list_ctrl_uploading = wx.ListCtrl(self.notebook_1_pane_3, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
         self.grid_report_information = wx.grid.Grid(self.notebook_3_pane_1, -1, size=(1, 1))
-        self.notebook_reports_pane_2 = wx.Panel(self.notebook_reports, -1)
+        self.grid_report_monitor = wx.grid.Grid(self.notebook_reports_pane_2, -1, size=(1, 1))
+        self.button_save_report = wx.Button(self.notebook_1_pane_4, -1, "Save as spreadsheet")
 
         self.__set_properties()
         self.__do_layout()
@@ -761,6 +764,7 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnRemoveFileButtonClick, self.button_remove_files)
         self.Bind(wx.EVT_BUTTON, self.OnFileBrowserButtonClick, self.button_browse)
         self.Bind(wx.EVT_BUTTON, self.OnUploadFilesButtonClick, self.button_upload_files)
+        self.Bind(wx.EVT_BUTTON, self.OnSaveReportButtonClick, self.button_save_report)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnMainNoteBookChanged, self.notebook_1)
         # end wxGlade
 
@@ -782,7 +786,9 @@ class MyMainFrame(wx.Frame):
         self.button_upload_files.SetMinSize((150, -1))
         self.button_upload_files.SetFont(wx.Font(8, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         self.button_upload_files.Enable(False)
-        self.grid_report_information.CreateGrid(0, 0)
+        self.grid_report_information.CreateGrid(0, 1)
+        self.grid_report_information.SetColLabelValue(0, "")
+        self.grid_report_monitor.CreateGrid(0, 0)
         # end wxGlade
 
     def __do_layout(self):
@@ -791,6 +797,7 @@ class MyMainFrame(wx.Frame):
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_8 = wx.BoxSizer(wx.VERTICAL)
+        sizer_48 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_9 = wx.BoxSizer(wx.VERTICAL)
         sizer_30 = wx.BoxSizer(wx.VERTICAL)
         sizer_31 = wx.StaticBoxSizer(self.sizer_31_staticbox, wx.HORIZONTAL)
@@ -854,9 +861,12 @@ class MyMainFrame(wx.Frame):
         self.notebook_1_pane_3.SetSizer(sizer_30)
         sizer_9.Add(self.grid_report_information, 1, wx.ALL|wx.EXPAND, 8)
         self.notebook_3_pane_1.SetSizer(sizer_9)
+        sizer_48.Add(self.grid_report_monitor, 1, wx.ALL|wx.EXPAND, 8)
+        self.notebook_reports_pane_2.SetSizer(sizer_48)
         self.notebook_reports.AddPage(self.notebook_3_pane_1, "Site Information")
         self.notebook_reports.AddPage(self.notebook_reports_pane_2, "URL Monitor Alerts")
         sizer_8.Add(self.notebook_reports, 1, wx.ALL|wx.EXPAND, 6)
+        sizer_8.Add(self.button_save_report, 0, wx.ALIGN_RIGHT, 0)
         self.notebook_1_pane_4.SetSizer(sizer_8)
         self.notebook_1.AddPage(self.notebook_1_pane_1, "Main")
         self.notebook_1.AddPage(self.notebook_1_pane_2, "Web services")
@@ -921,6 +931,8 @@ class MyMainFrame(wx.Frame):
         self.upload_site = None
         self.upload_dir = ''
         self.upload_queue = []
+        
+        self.current_report = {}
             
         
         self.Bind(wx.EVT_TIMER, self.OnTimerEvent)
@@ -943,9 +955,21 @@ class MyMainFrame(wx.Frame):
         event.Skip()       
         
         
-    def ChangeSiteURLStatus(self,site):
+    def ChangeSiteURLStatus(self,site,status,info):
         item = self.list_ctrl_sites.GetItem(site['list_item_id'])
-        item.SetTextColour(wx.RED)
+        if not status:
+            today_date = strftime('%Y-%m-%d %H:%M:%S',localtime())
+            item.SetTextColour(wx.RED)
+            try:
+                con = sqlite3.connect(self.config.db_path)    
+                c = con.cursor()                
+                c.execute('insert into log (siteid,component,info,data,date) values (?,?,?,?,?)',(site['db_id'],'url_monitor','Error',info,today_date))
+                con.commit()
+                c.close()
+            except:
+                self.logger.debug('Error saving url monitor data: %s',sys.exc_info())
+        else:
+            item.SetTextColour(wx.BLACK)
         self.list_ctrl_sites.SetItem(item)
         
     def RunPeriodicProcesses(self):
@@ -953,7 +977,7 @@ class MyMainFrame(wx.Frame):
             last_exec = int(self.config.preferences['last_monitor_exec'])
             if time.time() > int(self.config.preferences['url_monitor_time']) + last_exec:
                 self.config.preferences['last_monitor_exec'] = str(int(time.time()))
-                pu = murlmonitor.URLCheckThread(self)
+                pu = murlmonitor.URLCheckThread(self.msites,self.ChangeSiteURLStatus)
                 pu.start()
                 self.config.save_pref('last_monitor_exec')
             
@@ -1315,6 +1339,7 @@ class MyMainFrame(wx.Frame):
         
         if self.notebook_1.GetSelection() == 3:
             self.LoadSiteInfoReport()
+            self.LoadURLMonitorReport()
             
 
     def OnButtonRefreshClick(self, event): # wxGlade: MyMainFrame.<event_handler>
@@ -1622,6 +1647,9 @@ class MyMainFrame(wx.Frame):
         dlg.Destroy()
         
     def LoadSiteInfoReport(self):
+        current_report = []
+        report_header = []
+        
         self.grid_report_information.ClearGrid()
         if self.grid_report_information.GetNumberRows() > 0:
             self.grid_report_information.DeleteRows(0,self.grid_report_information.GetNumberRows())
@@ -1647,14 +1675,15 @@ class MyMainFrame(wx.Frame):
 
             c.execute('SELECT * FROM site_info WHERE siteid IN ('+string.join(site_list,',')+') ORDER BY DATE DESC')
             
+            site_info = ['sitename','date','version','release','courses','users','roleassignments','courseupdaters','posts','questions','resources','lang']
+            site_name_cache = {}            
+            
             add_cols = False
-            if self.grid_report_information.GetNumberCols() == 0:
+            if self.grid_report_information.GetNumberCols() < len(site_info):
                 add_cols = True
             
-            site_info = ['sitename','date','version','release','courses','users','roleassignments','courseupdaters','posts','questions','resources','lang']
-            site_name_cache = {}
-            
             for row_number,row in enumerate(c):
+                c_row = []
                 self.grid_report_information.AppendRows(1)
                 
                 if row['siteid'] not in site_name_cache:
@@ -1668,16 +1697,110 @@ class MyMainFrame(wx.Frame):
                     if row_number == 0:
                         if add_cols:
                             self.grid_report_information.InsertCols(col_number,1)
-                            self.grid_report_information.SetColLabelValue(col_number,col_name)                                        
+                            self.grid_report_information.SetColLabelValue(col_number,col_name)
+                            report_header.append(col_name)                                      
                     
                     self.grid_report_information.SetCellValue(row_number,col_number,str(row[col_name]))
+                    c_row.append(str(row[col_name]))
+                    
+                current_report.append(c_row)
             
             for i in range(0,self.grid_report_information.GetNumberCols()):
-                self.grid_report_information.AutoSizeColumn(i)         
+                self.grid_report_information.AutoSizeColumn(i)
+                
+            current_report.insert(0,report_header)
+            self.current_report[0] = current_report
+            
+                
+    def LoadURLMonitorReport(self):
+        current_report = []
+        report_header = []
+        
+        self.grid_report_monitor.ClearGrid()
+        if self.grid_report_monitor.GetNumberRows() > 0:
+            self.grid_report_monitor.DeleteRows(0,self.grid_report_monitor.GetNumberRows())
+        
+        index = self.list_ctrl_sites.GetFirstSelected()
+        
+        if index != -1:
+            site_list = []
+            while index != -1:
+                site_id = self.list_ctrl_sites.GetItemData(index)
+                site_list.append(str(site_id))
+                index = self.list_ctrl_sites.GetNextSelected(index)
+            
+            con = sqlite3.connect(self.config.db_path)    
+            def dict_factory(cursor, row):
+                    d = {}
+                    for idx, col in enumerate(cursor.description):
+                        d[col[0]] = row[idx]
+                    return d            
+                
+            con.row_factory = dict_factory
+            c = con.cursor()
+
+            c.execute('SELECT * FROM log WHERE component = "url_monitor" AND siteid IN ('+string.join(site_list,',')+') ORDER BY date DESC')
+            
+            site_info = ['sitename','date','info','data']
+            site_name_cache = {}
+                        
+            add_cols = False
+            if self.grid_report_monitor.GetNumberCols() < len(site_info):
+                add_cols = True
+
+            
+            for row_number,row in enumerate(c):
+                c_row = []
+                self.grid_report_monitor.AppendRows(1)
+                
+                if row['siteid'] not in site_name_cache:
+                    s = MoodleSite(self.config,db_id=row['siteid'])
+                    site_name_cache[row['siteid']] = s.name
+                    row['sitename'] = s.name
+                else:
+                    row['sitename'] = site_name_cache[row['siteid']]
+                
+                for col_number,col_name in enumerate(site_info):
+                    if row_number == 0:
+                        if add_cols:
+                            self.grid_report_monitor.InsertCols(col_number,1)
+                            self.grid_report_monitor.SetColLabelValue(col_number,col_name)
+                            report_header.append(col_name)                                       
+                    
+                    self.grid_report_monitor.SetCellValue(row_number,col_number,str(row[col_name]))
+                    
+                    c_row.append(str(row[col_name]))
+                    
+                current_report.append(c_row)
+            
+            for i in range(0,self.grid_report_monitor.GetNumberCols()):
+                self.grid_report_monitor.AutoSizeColumn(i) 
+                
+            current_report.insert(0,report_header)            
+            self.current_report[1] = current_report
 
     def OnMainNoteBookChanged(self, event): # wxGlade: MyMainFrame.<event_handler>
         self.LoadSiteInfoReport()
+        self.LoadURLMonitorReport()
         
+
+    def OnSaveReportButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        wildcard = "Spreadsheet format (*.csv)|*.csv" 
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir=os.getcwd(), 
+            defaultFile="", wildcard=wildcard, style=wx.SAVE
+            )
+
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            
+            page = self.notebook_reports.GetSelection()
+            
+            if page in self.current_report:
+                writer = csv.writer(open(path, "wb"))
+                writer.writerows(self.current_report[page])
+        
+        dlg.Destroy()
 
 # end of class MyMainFrame
 

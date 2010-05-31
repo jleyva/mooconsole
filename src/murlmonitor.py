@@ -15,25 +15,28 @@ def check_url(url):
     try:
         response = urlopen(req)
     except HTTPError, e:
-        return False
+        info = 'HTTP Error '+str(e.code)
+        return (False, info)
     except URLError, e:
-        return False 
+        info = 'Connectivity problem'
+        return (False, info)
     else:
-        return True
+        return (True,'')
         
 class URLCheckThread(Thread):
-    def __init__ (self,mt):
+    def __init__ (self,sites,callback):
         Thread.__init__(self)  
-        self.mt = mt
+        self.sites = sites
+        self.callback = callback
         self.logger = logging.getLogger('MLogger.MURLMonitor.URLCheckThread')
         
     def run(self):
-        for site in self.mt.msites:
+        for site in self.sites:
             if site['monitor'] == 1:
                 self.logger.debug('Checking URL: %s',site['url'])
-                if not check_url(site['url']):
-                    self.mt.ChangeSiteURLStatus(site)
-                self.logger.debug('Checked URL: %s',site['url'])
+                status,info = check_url(site['url'])
+                self.callback(site,status,info)
+                self.logger.debug('Checked URL: %s, %s, %s',site['url'],status,info)
 
 
 
