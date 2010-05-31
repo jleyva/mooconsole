@@ -1287,13 +1287,13 @@ class MyMainFrame(wx.Frame):
         
         for name,val in gatherer_list:
             dlg.combo_box_info_gatherer.Append(name,val)
-            print val, self.config.preferences['site_gatherer_time']            
+                      
             if int(self.config.preferences['site_gatherer_time']) == int(val):
                 dlg.combo_box_info_gatherer.SetValue(name)
             
         for name,val in monitor_list:
             dlg.combo_box_url_monitor.Append(name,val)
-            print val, self.config.preferences['url_monitor_time']
+            
             if int(self.config.preferences['url_monitor_time']) == int(val):
                 dlg.combo_box_url_monitor.SetValue(name)
                         
