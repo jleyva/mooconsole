@@ -19,6 +19,7 @@ from mlib import *
 from mconfig import *
 from mwslib import *
 from urllib import urlencode
+import time
 import webbrowser
 import murlmonitor
 import threading
@@ -368,14 +369,14 @@ class PreferencesDialog(wx.Dialog):
         sizer_20 = wx.StaticBoxSizer(self.sizer_20_staticbox, wx.HORIZONTAL)
         grid_sizer_4 = wx.BoxSizer(wx.VERTICAL)
         grid_sizer_4.Add(self.label_7, 0, 0, 0)
-        grid_sizer_4.Add(self.combo_box_info_gatherer, 0, 0, 0)
+        grid_sizer_4.Add(self.combo_box_info_gatherer, 0, wx.ALL, 3)
         grid_sizer_4.Add(self.label_13, 0, 0, 0)
-        grid_sizer_4.Add(self.combo_box_url_monitor, 0, 0, 0)
+        grid_sizer_4.Add(self.combo_box_url_monitor, 0, wx.ALL, 3)
         sizer_20.Add(grid_sizer_4, 0, wx.EXPAND, 0)
-        sizer_17.Add(sizer_20, 1, wx.EXPAND, 0)
+        sizer_17.Add(sizer_20, 1, wx.ALL|wx.EXPAND, 6)
         sizer_18.Add(self.button_save, 0, 0, 0)
         sizer_18.Add(self.button_cancel, 0, 0, 0)
-        sizer_17.Add(sizer_18, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_17.Add(sizer_18, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 6)
         self.SetSizer(sizer_17)
         sizer_17.Fit(self)
         self.Layout()
@@ -728,6 +729,7 @@ class MyMainFrame(wx.Frame):
         self.button_upload_files = wx.Button(self.notebook_1_pane_3, -1, "Upload Files")
         self.list_ctrl_uploading = wx.ListCtrl(self.notebook_1_pane_3, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
         self.grid_report_information = wx.grid.Grid(self.notebook_3_pane_1, -1, size=(1, 1))
+        self.notebook_reports_pane_2 = wx.Panel(self.notebook_reports, -1)
 
         self.__set_properties()
         self.__do_layout()
@@ -853,7 +855,8 @@ class MyMainFrame(wx.Frame):
         sizer_9.Add(self.grid_report_information, 1, wx.ALL|wx.EXPAND, 8)
         self.notebook_3_pane_1.SetSizer(sizer_9)
         self.notebook_reports.AddPage(self.notebook_3_pane_1, "Site Information")
-        sizer_8.Add(self.notebook_reports, 1, wx.EXPAND, 0)
+        self.notebook_reports.AddPage(self.notebook_reports_pane_2, "URL Monitor Alerts")
+        sizer_8.Add(self.notebook_reports, 1, wx.ALL|wx.EXPAND, 6)
         self.notebook_1_pane_4.SetSizer(sizer_8)
         self.notebook_1.AddPage(self.notebook_1_pane_1, "Main")
         self.notebook_1.AddPage(self.notebook_1_pane_2, "Web services")
@@ -922,21 +925,13 @@ class MyMainFrame(wx.Frame):
         
         self.Bind(wx.EVT_TIMER, self.OnTimerEvent)
         self.t1 = wx.Timer(self)
-        self.t1.Start(300000)
+        self.t1.Start(60000)
         
         self.logger.debug('Timer started')
            
-        if int(self.config.preferences['url_monitor_time']) > 0:
-            self.logger.debug('Starting URL Monitor, every %s secs',self.config.preferences['url_monitor_time'])
-            pu = murlmonitor.URLCheckThread(self)
-            pu.start()
-            
-        if int(self.config.preferences['site_gatherer_time']) > 0:
-            self.logger.debug('Starting Site Info Gatherer, every %s secs',self.config.preferences['site_gatherer_time'])
-            pg = minfogatherer.SiteInfoGatherer(self.config, self.msites)
-            pg.start()
+        self.RunPeriodicProcesses()
         
-        self.logger.debug('URL and Site Info Gatherer started')
+        self.logger.debug('Periodic Processes started')
         
         self.text_ctrl_filter.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         
@@ -945,24 +940,34 @@ class MyMainFrame(wx.Frame):
         keycode = event.GetKeyCode()
         if keycode == 70 and event.CmdDown():       
             self.DoSearch()
-        event.Skip()
-        
+        event.Skip()       
         
         
     def ChangeSiteURLStatus(self,site):
         item = self.list_ctrl_sites.GetItem(site['list_item_id'])
         item.SetTextColour(wx.RED)
-        self.list_ctrl_sites.SetItem(item)      
-    
-    def OnTimerEvent(self,evt):
-        #TODO: All, get last execution time, etc...
+        self.list_ctrl_sites.SetItem(item)
+        
+    def RunPeriodicProcesses(self):
         if int(self.config.preferences['url_monitor_time']) > 0:
-            pu = murlmonitor.URLCheckThread(self)
-            pu.start()
+            last_exec = int(self.config.preferences['last_monitor_exec'])
+            if time.time() > int(self.config.preferences['url_monitor_time']) + last_exec:
+                self.config.preferences['last_monitor_exec'] = str(int(time.time()))
+                pu = murlmonitor.URLCheckThread(self)
+                pu.start()
+                self.config.save_pref('last_monitor_exec')
             
         if int(self.config.preferences['site_gatherer_time']) > 0:
-            pg = minfogatherer.SiteInfoGatherer(self.config, self.msites)
-            pg.start()
+            last_exec = int(self.config.preferences['last_gatherer_exec'])
+            if time.time() > int(self.config.preferences['site_gatherer_time']) + last_exec:
+                self.config.preferences['last_gatherer_exec'] = str(int(time.time()))
+                pg = minfogatherer.SiteInfoGatherer(self.config, self.msites)
+                pg.start()
+                self.config.save_pref('last_gatherer_exec')
+                
+    
+    def OnTimerEvent(self,evt):
+        self.RunPeriodicProcesses()
 
 
     def OnNewSiteButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>

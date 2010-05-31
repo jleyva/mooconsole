@@ -83,6 +83,19 @@ class MConfig(object):
             self.preferences[row[1]] = row[2]
         c.close()
         
+    def save_pref(self,pref):
+        if pref in self.preferences:
+            try:
+                con = sqlite3.connect(self.db_path)    
+                c = con.cursor()
+                    
+                c.execute('update config set value = ? where name = ?', (self.preferences[pref],pref))        
+                        
+                con.commit()
+                c.close()
+            except:
+                pass
+        
     def save(self):
         con = sqlite3.connect(self.db_path)    
         c = con.cursor()
