@@ -733,7 +733,9 @@ class MyMainFrame(wx.Frame):
         self.button_browse = wx.Button(self.notebook_1_pane_3, -1, "Browse Moodle Site")
         self.button_upload_files = wx.Button(self.notebook_1_pane_3, -1, "Upload Files")
         self.list_ctrl_uploading = wx.ListCtrl(self.notebook_1_pane_3, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.label_14 = wx.StaticText(self.notebook_3_pane_1, -1, "Select one or more Moodle sites from the left list:")
         self.grid_report_information = wx.grid.Grid(self.notebook_3_pane_1, -1, size=(1, 1))
+        self.label_17 = wx.StaticText(self.notebook_reports_pane_2, -1, "Select one or more Moodle sites from the left list:")
         self.grid_report_monitor = wx.grid.Grid(self.notebook_reports_pane_2, -1, size=(1, 1))
         self.button_save_report = wx.Button(self.notebook_1_pane_4, -1, "Save as spreadsheet")
 
@@ -801,7 +803,7 @@ class MyMainFrame(wx.Frame):
         sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_8 = wx.BoxSizer(wx.VERTICAL)
-        sizer_48 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_48 = wx.BoxSizer(wx.VERTICAL)
         sizer_9 = wx.BoxSizer(wx.VERTICAL)
         sizer_30 = wx.BoxSizer(wx.VERTICAL)
         sizer_31 = wx.StaticBoxSizer(self.sizer_31_staticbox, wx.HORIZONTAL)
@@ -863,8 +865,10 @@ class MyMainFrame(wx.Frame):
         sizer_31.Add(self.list_ctrl_uploading, 1, wx.EXPAND, 0)
         sizer_30.Add(sizer_31, 1, wx.EXPAND, 0)
         self.notebook_1_pane_3.SetSizer(sizer_30)
+        sizer_9.Add(self.label_14, 0, 0, 0)
         sizer_9.Add(self.grid_report_information, 1, wx.ALL|wx.EXPAND, 8)
         self.notebook_3_pane_1.SetSizer(sizer_9)
+        sizer_48.Add(self.label_17, 0, 0, 0)
         sizer_48.Add(self.grid_report_monitor, 1, wx.ALL|wx.EXPAND, 8)
         self.notebook_reports_pane_2.SetSizer(sizer_48)
         self.notebook_reports.AddPage(self.notebook_3_pane_1, "Site Information")
@@ -968,10 +972,16 @@ class MyMainFrame(wx.Frame):
         
         
     def ChangeSiteURLStatus(self,site,status,info):
-        item = self.list_ctrl_sites.GetItem(site['list_item_id'])
+        #item = self.list_ctrl_sites.GetItem(site['list_item_id'])
+        change_color = True
+        try:
+            item_id = self.list_ctrl_sites.FindItemData(-1,site['db_id'])
+            item = self.list_ctrl_sites.GetItem(item_id )
+        except:
+            change_color = False
+        
         if not status:
-            today_date = strftime('%Y-%m-%d %H:%M:%S',localtime())
-            item.SetTextColour(wx.RED)
+            today_date = strftime('%Y-%m-%d %H:%M:%S',localtime())            
             try:
                 con = sqlite3.connect(self.config.db_path)    
                 c = con.cursor()                
@@ -980,9 +990,13 @@ class MyMainFrame(wx.Frame):
                 c.close()
             except:
                 self.logger.debug('Error saving url monitor data: %s',sys.exc_info())
+            if change_color:
+                item.SetTextColour(wx.RED)
         else:
-            item.SetTextColour(wx.BLACK)
-        self.list_ctrl_sites.SetItem(item)
+            if change_color:
+                item.SetTextColour(wx.BLACK)
+        if change_color:        
+            self.list_ctrl_sites.SetItem(item)
         
     def RunPeriodicProcesses(self):
         if int(self.config.preferences['url_monitor_time']) > 0:
@@ -1370,7 +1384,7 @@ class MyMainFrame(wx.Frame):
                         break
                 
                 if len(ws_selected) > 0:
-                    dlg = InputDataDialog(self, -1, 'Input data', size =(800,600))
+                    dlg = InputDataDialog(self, -1, 'Input data')
                     dlg.CenterOnScreen()
                     
                     if self.grid_ws.GetNumberRows() > 0:
