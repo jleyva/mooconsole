@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import sqlite3
@@ -60,7 +60,11 @@ class MConfig(object):
         self.tmp_path = p.path_user_data
         self.ws_path = os.path.join(p.path_data,'webservice')
         
-        self.master_password = ''        
+        self.master_password = ''
+        
+        self.release = '2010060101'
+        self.version = '0.9 alpha'
+         
         self.preferences['user_agent'] = 'Mozilla/4.0 (compatible; MSIE 5.5; WindowsNT)'
         self.preferences['max_repo_id'] = '5'
         self.preferences['max_log_files'] = '5'
@@ -69,30 +73,28 @@ class MConfig(object):
         self.preferences['site_gatherer_time'] = '0'
         
         self.preferences['last_monitor_exec'] = '0'
-        self.preferences['last_gatherer_exec'] = '0'        
+        self.preferences['last_gatherer_exec'] = '0' 
         
+        self.preferences['link_documentation'] = 'http://sites.google.com/site/mooconsole/documentation'
+        self.preferences['link_website'] = 'http://sites.google.com/site/mooconsole/'
         self.reload()
         
 
     def reload(self):
         con = sqlite3.connect(self.db_path)
-        c = con.cursor()
-        c.execute('select * from config')        
+        c = con.execute('select * from config')        
         
         for row in c:
             self.preferences[row[1]] = row[2]
-        c.close()
+        con.close()
         
     def save_pref(self,pref):
         if pref in self.preferences:
             try:
                 con = sqlite3.connect(self.db_path)    
-                c = con.cursor()
-                    
-                c.execute('update config set value = ? where name = ?', (self.preferences[pref],pref))        
-                        
+                con.execute('update config set value = ? where name = ?', (self.preferences[pref],pref))                
                 con.commit()
-                c.close()
+                con.close()
             except:
                 pass
         
@@ -108,6 +110,7 @@ class MConfig(object):
                 c.execute('insert into config (name,value) values (?,?)', (name,value))        
         con.commit()
         c.close()
+        con.close()
 
 if __name__ == "__main__":
     #For testing

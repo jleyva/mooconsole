@@ -32,6 +32,7 @@ import logging
 import logging.handlers
 import string
 from time import sleep, strftime, localtime
+from mupgrade import MUpgrade
 
 class MoodleBrowserDialog(wx.Dialog):
     def __init__(self, *args, **kwds):
@@ -696,6 +697,8 @@ class MyMainFrame(wx.Frame):
         wxglade_tmp_menu.AppendItem(self.menu_change_mp)
         self.frame_1_menubar.Append(wxglade_tmp_menu, "Options")
         wxglade_tmp_menu = wx.Menu()
+        self.menu_doc = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Documentation online", "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.AppendItem(self.menu_doc)
         self.menu_website = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Website", "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.menu_website)
         self.menu_about = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "About", "", wx.ITEM_NORMAL)
@@ -747,6 +750,7 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnMenuXrefClick, self.menu_xref)
         self.Bind(wx.EVT_MENU, self.OnPreferencesMenuClick, self.menu_preferences)
         self.Bind(wx.EVT_MENU, self.OnChangeMPMenuClick, self.menu_change_mp)
+        self.Bind(wx.EVT_MENU, self.OnDocOnlineMenuClick, self.menu_doc)
         self.Bind(wx.EVT_MENU, self.OnWebsiteMenuClick, self.menu_website)
         self.Bind(wx.EVT_MENU, self.OnAboutMenuClick, self.menu_about)
         self.Bind(wx.EVT_TEXT_ENTER, self.OnFilterEnter, self.text_ctrl_filter)
@@ -775,7 +779,7 @@ class MyMainFrame(wx.Frame):
         self.SetBackgroundColour(wx.Colour(212, 208, 200))
         self.frame_1_statusbar.SetStatusWidths([-2, -1])
         # statusbar fields
-        frame_1_statusbar_fields = ["", "MooConsole - Juan Leyva 2010"]
+        frame_1_statusbar_fields = ["", "Juan Leyva 2010"]
         for i in range(len(frame_1_statusbar_fields)):
             self.frame_1_statusbar.SetStatusText(frame_1_statusbar_fields[i], i)
         self.text_ctrl_filter.SetFocus()
@@ -895,7 +899,15 @@ class MyMainFrame(wx.Frame):
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)        
         
-        self.logger.debug('Starting application')        
+        self.logger.debug('Starting application') 
+        
+        upgrader = MUpgrade(self.config)
+        if not upgrader.upgrade():
+            self.ShowMessage('Fatal error upgrading version, see user_data/log for details')
+            self.Close()
+            sys.exit()
+            
+        self.frame_1_statusbar.SetStatusText('MooConsole '+self.config.version, 0)
         
         favicon = wx.Icon(os.path.join(self.config.img_path,'moodle.ico'), wx.BITMAP_TYPE_ICO, 16, 16)
         self.SetIcon(favicon)
@@ -1210,7 +1222,8 @@ class MyMainFrame(wx.Frame):
         self.Close()
 
     def OnAboutMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        msg = "Author: Juan Leyva 2010\n\n" + \
+        msg = "MooConsole " + self.config.version + " (" + self.config.release + ")\n"\
+              "Author: Juan Leyva 2010\n\n" + \
               "Web: http://sites.google.com/site/mooconsole\n" + \
               "Blog: http://openlearningtech.blogspot.com\n" + \
               "Blog: http://moodle-es.blogspot.com\n"
@@ -1306,7 +1319,7 @@ class MyMainFrame(wx.Frame):
         dlg.Destroy()
 
     def OnWebsiteMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        webbrowser.open('http://sites.google.com/site/mooconsole')
+        webbrowser.open(self.config.preferences['link_website'])
 
     def OnSitesListSelected(self, event): # wxGlade: MyMainFrame.<event_handler>
         index = self.list_ctrl_sites.GetFirstSelected()
@@ -1801,6 +1814,9 @@ class MyMainFrame(wx.Frame):
                 writer.writerows(self.current_report[page])
         
         dlg.Destroy()
+
+    def OnDocOnlineMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        webbrowser.open(self.config.preferences['link_documentation'])
 
 # end of class MyMainFrame
 
