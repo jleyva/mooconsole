@@ -33,6 +33,7 @@ import logging.handlers
 import string
 from time import sleep, strftime, localtime
 from mupgrade import MUpgrade
+import mconst
 
 class MoodleBrowserDialog(wx.Dialog):
     def __init__(self, *args, **kwds):
@@ -91,10 +92,22 @@ class MoodleBrowserDialog(wx.Dialog):
         root_branch = self.file_browser.get_root()
         root = self.tree_ctrl_browser.AddRoot(site.name)
         
+        isz = (16,16)
+        self.il = wx.ImageList(isz[0], isz[1])
+        
+        self.fldridx     = self.il.Add(wx.Bitmap(os.path.join(config.img_path,'folder_closed.gif'), wx.BITMAP_TYPE_GIF))
+        self.fldropenidx = self.il.Add(wx.Bitmap(os.path.join(config.img_path,'folder_open.gif'), wx.BITMAP_TYPE_GIF))
+
+        self.tree_ctrl_browser.SetImageList(self.il)
+        self.tree_ctrl_browser.SetItemImage(root, self.fldridx, wx.TreeItemIcon_Normal)
+        self.tree_ctrl_browser.SetItemImage(root, self.fldropenidx, wx.TreeItemIcon_Expanded)
+        
         if root_branch is not False and len(root_branch) > 0:
             for key,el in root_branch.iteritems():
                 child = self.tree_ctrl_browser.AppendItem(root, el['title'])
-                self.tree_ctrl_browser.SetPyData(child,key)
+                self.tree_ctrl_browser.SetPyData(child,key)                
+                self.tree_ctrl_browser.SetItemImage(child, self.fldridx, wx.TreeItemIcon_Normal)
+                self.tree_ctrl_browser.SetItemImage(child, self.fldropenidx, wx.TreeItemIcon_Expanded)
                 self.tree_ctrl_browser.SetItemHasChildren(child)
             
             self.tree_ctrl_browser.Expand(root)
@@ -116,10 +129,14 @@ class MoodleBrowserDialog(wx.Dialog):
                     if 'path' in el:
                         child = self.tree_ctrl_browser.AppendItem(item, el['title'])
                         self.tree_ctrl_browser.SetPyData(child,key)
-                        self.tree_ctrl_browser.SetItemHasChildren(child)        
+                        self.tree_ctrl_browser.SetItemHasChildren(child)
+                        
+                        self.tree_ctrl_browser.SetItemImage(child, self.fldridx, wx.TreeItemIcon_Normal)
+                        self.tree_ctrl_browser.SetItemImage(child, self.fldropenidx, wx.TreeItemIcon_Expanded)      
 
                 if self.tree_ctrl_browser.GetChildrenCount(item) == 0:
                     self.tree_ctrl_browser.SetItemHasChildren(item,False)
+
 
     def OnSelChanged(self, event): # wxGlade: MoodleBrowserDialog.<event_handler>
         item = event.GetItem()
@@ -162,6 +179,7 @@ class MoodleBrowserDialog(wx.Dialog):
                     self.tree_ctrl_browser.SetItemHasChildren(item) 
                     self.tree_ctrl_browser.Collapse(item)        
                     self.tree_ctrl_browser.Expand(item)
+                    
             dlg.Destroy()   
 
             
@@ -1366,7 +1384,7 @@ class MyMainFrame(wx.Frame):
             self.htmlwindow_info.SetPage(html_page)   
             
         
-        if self.notebook_1.GetSelection() == 3:
+        if self.notebook_1.GetSelection() == mconst.REPORT_TAB:
             self.LoadSiteInfoReport()
             self.LoadURLMonitorReport()
             
@@ -1738,7 +1756,7 @@ class MyMainFrame(wx.Frame):
                 self.grid_report_information.AutoSizeColumn(i)
                 
             current_report.insert(0,report_header)
-            self.current_report[0] = current_report
+            self.current_report[mconst.SITE_INFO_REPORT_TAB] = current_report
             
                 
     def LoadURLMonitorReport(self):
@@ -1806,7 +1824,7 @@ class MyMainFrame(wx.Frame):
                 self.grid_report_monitor.AutoSizeColumn(i) 
                 
             current_report.insert(0,report_header)            
-            self.current_report[1] = current_report
+            self.current_report[mconst.URL_MONITOR_REPORT_TAB] = current_report
 
     def OnMainNoteBookChanged(self, event): # wxGlade: MyMainFrame.<event_handler>
         self.LoadSiteInfoReport()
