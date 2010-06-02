@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-REPORT_TAB = 3
+REPORT_TAB = 4
 
 SITE_INFO_REPORT_TAB = 0
 
