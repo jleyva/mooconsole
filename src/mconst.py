@@ -1,6 +1,8 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+LOGIN_TAB = 0
+
 REPORT_TAB = 4
 
 SITE_CONFIG_TAB = 1

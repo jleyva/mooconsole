@@ -1014,7 +1014,10 @@ class MyMainFrame(wx.Frame):
         self.upload_queue = []
         
         self.current_report = {}
+        
         self.list_prefs = []
+        self.prefs_sites = []
+        self.prefs_prefs = []
             
         
         self.Bind(wx.EVT_TIMER, self.OnTimerEvent)
@@ -1221,6 +1224,7 @@ class MyMainFrame(wx.Frame):
                 return True 
         
         self.PopulateList(filter(filter_site,self.msites))
+        
 
     def OnEditSiteButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         index = self.list_ctrl_sites.GetFirstSelected()
@@ -1402,37 +1406,58 @@ class MyMainFrame(wx.Frame):
         webbrowser.open(self.config.preferences['link_website'])
 
     def OnSitesListSelected(self, event): # wxGlade: MyMainFrame.<event_handler>
-        index = self.list_ctrl_sites.GetFirstSelected()
         
-        if index != -1:
-            site_id = self.list_ctrl_sites.GetItemData(index)
-            site = MoodleSite(self.config,db_id=site_id)
+        nb_page = self.notebook_1.GetSelection()        
+        
+        if nb_page == mconst.LOGIN_TAB:
+            index = self.list_ctrl_sites.GetFirstSelected()
+            
+            if index != -1:
+                site_id = self.list_ctrl_sites.GetItemData(index)
+                site = MoodleSite(self.config,db_id=site_id)
 
-            html_page = u'<html>\n'
-            html_page += u'<body>\n'
-            html_page += u'<p><b>'+site.name+'</b></p>\n'
-            html_page += u'<p><b>URL</b>: '+site.url+'</p>\n'
-            html_page += u'<p><b>Version</b>: '+str(site.site_info['release'])+' '+str(site.site_info['version'])+'</p>\n'
-            html_page += u'<p><b>Notes</b>: '+site.notes+'</p>\n'
-            html_page += u'<p><b>Courses</b>: '+str(site.site_info['courses'])+'</p>\n'
-            html_page += u'<p><b>Users</b>: '+str(site.site_info['users'])+'</p>\n'
-            html_page += u'<p><b>Assignments</b>: '+str(site.site_info['roleassignments'])+'</p>\n'
-            html_page += u'<p><b>Updaters</b>: '+str(site.site_info['courseupdaters'])+'</p>\n'
-            html_page += u'<p><b>Posts</b>: '+str(site.site_info['posts'])+'</p>\n'
-            html_page += u'<p><b>Questions</b>: '+str(site.site_info['questions'])+'</p>\n'
-            html_page += u'<p><b>Resources</b>: '+str(site.site_info['resources'])+'</p>\n'
-            html_page += u'<p><b>Lang</b>: '+str(site.site_info['lang'])+'</p>\n'
-            html_page += u'</body>\n'
-            html_page += u'</html>\n'
+                html_page = u'<html>\n'
+                html_page += u'<body>\n'
+                html_page += u'<p><b>'+site.name+'</b></p>\n'
+                html_page += u'<p><b>URL</b>: '+site.url+'</p>\n'
+                html_page += u'<p><b>Version</b>: '+str(site.site_info['release'])+' '+str(site.site_info['version'])+'</p>\n'
+                html_page += u'<p><b>Notes</b>: '+site.notes+'</p>\n'
+                html_page += u'<p><b>Courses</b>: '+str(site.site_info['courses'])+'</p>\n'
+                html_page += u'<p><b>Users</b>: '+str(site.site_info['users'])+'</p>\n'
+                html_page += u'<p><b>Assignments</b>: '+str(site.site_info['roleassignments'])+'</p>\n'
+                html_page += u'<p><b>Updaters</b>: '+str(site.site_info['courseupdaters'])+'</p>\n'
+                html_page += u'<p><b>Posts</b>: '+str(site.site_info['posts'])+'</p>\n'
+                html_page += u'<p><b>Questions</b>: '+str(site.site_info['questions'])+'</p>\n'
+                html_page += u'<p><b>Resources</b>: '+str(site.site_info['resources'])+'</p>\n'
+                html_page += u'<p><b>Lang</b>: '+str(site.site_info['lang'])+'</p>\n'
+                html_page += u'</body>\n'
+                html_page += u'</html>\n'
 
-            self.htmlwindow_info.SetPage(html_page)
-        else:
-            self.htmlwindow_info.SetPage(html_page)   
+                self.htmlwindow_info.SetPage(html_page)
+            else:
+                self.htmlwindow_info.SetPage(html_page)   
             
         
-        if self.notebook_1.GetSelection() == mconst.REPORT_TAB:
+        if nb_page == mconst.REPORT_TAB:
             self.LoadSiteInfoReport()
             self.LoadURLMonitorReport()
+            
+        if nb_page == mconst.SITE_CONFIG_TAB:
+            if self.grid_preferences.GetNumberCols() > 0:
+                self.grid_preferences.DeleteCols(0,self.grid_preferences.GetNumberCols())
+                
+            self.prefs_sites = []
+                
+            index = self.list_ctrl_sites.GetFirstSelected()
+            col = 0
+            while index != -1:
+                site_id = self.list_ctrl_sites.GetItemData(index)
+                self.prefs_sites.append(site_id)
+                self.grid_preferences.AppendCols(1)
+                self.grid_preferences.SetColLabelValue(col,self.list_ctrl_sites.GetItemText(index))
+                index = self.list_ctrl_sites.GetNextSelected(index)
+                col += 1
+            
             
 
     def OnButtonRefreshClick(self, event): # wxGlade: MyMainFrame.<event_handler>
@@ -1872,6 +1897,18 @@ class MyMainFrame(wx.Frame):
             current_report.insert(0,report_header)            
             self.current_report[mconst.URL_MONITOR_REPORT_TAB] = current_report
 
+    
+    def PopulateFilterPrefList(self, prefs_list, sel = False):
+        self.list_ctrl_preferences.DeleteAllItems()
+        for pref in prefs_list:
+            index = self.list_ctrl_preferences.InsertStringItem(sys.maxint, pref['name'])    
+            self.list_ctrl_preferences.SetItemData(index, pref['id'])
+            self.list_ctrl_preferences.SetStringItem(index, 1, pref['version'])
+            if sel:
+                self.list_ctrl_preferences.SetItemState(index, wx.LIST_STATE_SELECTED,wx.LIST_STATE_SELECTED)    
+                
+        self.list_ctrl_preferences.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+    
     def OnMainNoteBookChanged(self, event): # wxGlade: MyMainFrame.<event_handler>
         if self.notebook_1.GetSelection() == mconst.REPORT_TAB:        
             self.LoadSiteInfoReport()
@@ -1881,11 +1918,17 @@ class MyMainFrame(wx.Frame):
             if len(self.list_prefs) == 0:
                 con = sqlite3.connect(self.config.db_path) 
                 con.row_factory = sqlite3.Row 
-                for row in con.execute("select * from moodle_prefs"):
-                    self.list_prefs.append(row)
+                for row in con.execute("select * from moodle_prefs order by name asc"):
+                    self.list_prefs.insert(row['id'],row)
                 con.close()
-                print self.list_prefs
-        
+                
+                self.list_ctrl_preferences.InsertColumn(0,'Preference')
+                self.list_ctrl_preferences.InsertColumn(1,'Version')                
+                           
+                self.PopulateFilterPrefList(self.list_prefs)
+                
+                self.text_ctrl_filter_prefs.SetFocus()
+                    
 
     def OnSaveReportButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         wildcard = "Spreadsheet format (*.csv)|*.csv" 
@@ -1913,20 +1956,46 @@ class MyMainFrame(wx.Frame):
         event.Skip()
 
     def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnAddPrefButtonClick' not implemented"
-        event.Skip()
+        index = self.list_ctrl_preferences.GetFirstSelected()
+        while index != -1:
+            if self.list_ctrl_preferences.GetItemText(index) not in self.prefs_prefs:
+                self.grid_preferences.AppendRows(1)
+                self.grid_preferences.SetRowLabelValue(self.grid_preferences.GetNumberRows() - 1,self.list_ctrl_preferences.GetItemText(index))
+                self.prefs_prefs.append(self.list_ctrl_preferences.GetItemText(index))
+            index = self.list_ctrl_preferences.GetNextSelected(index)
+        self.grid_preferences.SetRowLabelSize(200)
 
     def OnRemovePrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnRemovePrefButtonClick' not implemented"
-        event.Skip()
+        
+        to_remove = []
+        index = self.list_ctrl_preferences.GetFirstSelected()
+        while index != -1:
+            to_remove.append(self.list_ctrl_preferences.GetItemText(index))
+            index = self.list_ctrl_preferences.GetNextSelected(index)        
+        
+        num_rows = self.grid_preferences.GetNumberRows()
+        
+        if num_rows > 0 and len(to_remove) > 0:
+            for i in reversed(range(0,num_rows)):
+                if self.grid_preferences.GetRowLabelValue(i) in to_remove:
+                    self.grid_preferences.DeleteRows(i)
+                    self.prefs_prefs.remove(self.grid_preferences.GetRowLabelValue(i))
+
 
     def OnButonSavePrefsClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         print "Event handler `OnButonSavePrefsClick' not implemented"
         event.Skip()
 
     def OnFilterPrefsText(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnFilterPrefsText' not implemented"
-        event.Skip()
+                     
+        def filter_pref(s):
+            if self.text_ctrl_filter_prefs.GetValue() != '' and s['name'].lower().find(self.text_ctrl_filter_prefs.GetValue()) > -1:
+                return True 
+        
+        if self.text_ctrl_filter_prefs.GetValue() == '':
+            self.PopulateFilterPrefList(self.list_prefs)
+        else:
+            self.PopulateFilterPrefList(filter(filter_pref,self.list_prefs),True)
 
 # end of class MyMainFrame
 
