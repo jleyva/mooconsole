@@ -737,15 +737,15 @@ class MyMainFrame(wx.Frame):
         self.button_login = wx.Button(self.notebook_1_pane_1, -1, "Login")
         self.htmlwindow_info = wx.html.HtmlWindow(self.notebook_1_pane_1, -1, style=wx.TAB_TRAVERSAL)
         self.label_25 = wx.StaticText(self.notebook_1_pane_2, -1, "Select one or more sites from the left list:")
-        self.list_ctrl_1 = wx.ListCtrl(self.notebook_1_pane_2, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.list_ctrl_preferences = wx.ListCtrl(self.notebook_1_pane_2, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
         self.label_26 = wx.StaticText(self.notebook_1_pane_2, -1, "Filter preferences:")
-        self.text_ctrl_1 = wx.TextCtrl(self.notebook_1_pane_2, -1, "")
-        self.button_4 = wx.Button(self.notebook_1_pane_2, -1, "Add")
-        self.button_6 = wx.Button(self.notebook_1_pane_2, -1, "Remove")
-        self.grid_1 = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
-        self.button_9 = wx.Button(self.notebook_1_pane_2, -1, "button_9")
+        self.text_ctrl_filter_prefs = wx.TextCtrl(self.notebook_1_pane_2, -1, "")
+        self.button_add_pref = wx.Button(self.notebook_1_pane_2, -1, "Add")
+        self.button_remove_pref = wx.Button(self.notebook_1_pane_2, -1, "Remove")
+        self.grid_preferences = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
+        self.button_get_prefs = wx.Button(self.notebook_1_pane_2, -1, "Get preferences")
         self.button_10 = wx.Button(self.notebook_1_pane_2, -1, "button_10")
-        self.button_1 = wx.Button(self.notebook_1_pane_2, -1, "button_1")
+        self.button_save_prefs = wx.Button(self.notebook_1_pane_2, -1, "Save as spreadsheet")
         self.label_19 = wx.StaticText(self.notebook_1_pane_3, -1, "Only for Moodle 2 sites")
         self.label_16 = wx.StaticText(self.notebook_1_pane_3, -1, "Select a web service")
         self.combo_box_ws = wx.ComboBox(self.notebook_1_pane_3, -1, choices=[], style=wx.CB_DROPDOWN|wx.CB_READONLY)
@@ -794,6 +794,11 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnEditSiteButtonClick, self.button_edit)
         self.Bind(wx.EVT_BUTTON, self.OnRemoveSiteButtonClick, self.button_remove)
         self.Bind(wx.EVT_BUTTON, self.OnButtonLoginClick, self.button_login)
+        self.Bind(wx.EVT_TEXT, self.OnFilterPrefsText, self.text_ctrl_filter_prefs)
+        self.Bind(wx.EVT_BUTTON, self.OnAddPrefButtonClick, self.button_add_pref)
+        self.Bind(wx.EVT_BUTTON, self.OnRemovePrefButtonClick, self.button_remove_pref)
+        self.Bind(wx.EVT_BUTTON, self.OnGetPrefsButtonClick, self.button_get_prefs)
+        self.Bind(wx.EVT_BUTTON, self.OnButonSavePrefsClick, self.button_save_prefs)
         self.Bind(wx.EVT_COMBOBOX, self.OnComboWSSelected, self.combo_box_ws)
         self.Bind(wx.EVT_BUTTON, self.OnOpenIDataButtonClick, self.button_open_idata)
         self.Bind(wx.EVT_BUTTON, self.OnSaveSpreadsheetButtonClick, self.button_save_csv)
@@ -817,8 +822,9 @@ class MyMainFrame(wx.Frame):
             self.frame_1_statusbar.SetStatusText(frame_1_statusbar_fields[i], i)
         self.text_ctrl_filter.SetFocus()
         self.htmlwindow_info.SetScrollRate(10, 10)
-        self.grid_1.CreateGrid(0, 1)
-        self.grid_1.SetColLabelValue(0, "")
+        self.grid_preferences.CreateGrid(0, 1)
+        self.grid_preferences.SetColLabelValue(0, "")
+        self.button_10.Hide()
         self.label_19.SetForegroundColour(wx.Colour(255, 0, 0))
         self.grid_ws.CreateGrid(10, 0)
         self.grid_ws.Enable(False)
@@ -878,20 +884,20 @@ class MyMainFrame(wx.Frame):
         sizer_13.Add(sizer_36, 1, wx.EXPAND, 0)
         self.notebook_1_pane_1.SetSizer(sizer_13)
         sizer_49.Add(self.label_25, 0, 0, 0)
-        sizer_50.Add(self.list_ctrl_1, 1, wx.EXPAND, 0)
+        sizer_50.Add(self.list_ctrl_preferences, 1, wx.EXPAND, 0)
         sizer_51.Add(self.label_26, 0, wx.LEFT, 3)
-        sizer_51.Add(self.text_ctrl_1, 0, wx.LEFT, 3)
-        sizer_53.Add(self.button_4, 0, wx.TOP, 10)
-        sizer_53.Add(self.button_6, 0, wx.TOP, 10)
+        sizer_51.Add(self.text_ctrl_filter_prefs, 0, wx.LEFT, 3)
+        sizer_53.Add(self.button_add_pref, 0, wx.TOP, 10)
+        sizer_53.Add(self.button_remove_pref, 0, wx.TOP, 10)
         sizer_52.Add(sizer_53, 1, wx.EXPAND, 0)
         sizer_51.Add(sizer_52, 1, wx.ALL|wx.EXPAND, 6)
         sizer_50.Add(sizer_51, 1, wx.EXPAND, 0)
         sizer_49.Add(sizer_50, 1, wx.EXPAND, 0)
-        sizer_49.Add(self.grid_1, 1, wx.EXPAND, 0)
-        sizer_56.Add(self.button_9, 0, 0, 0)
+        sizer_49.Add(self.grid_preferences, 1, wx.EXPAND, 0)
+        sizer_56.Add(self.button_get_prefs, 0, 0, 0)
         sizer_56.Add(self.button_10, 0, 0, 0)
         sizer_55.Add(sizer_56, 1, wx.EXPAND, 0)
-        sizer_55.Add(self.button_1, 0, 0, 0)
+        sizer_55.Add(self.button_save_prefs, 0, 0, 0)
         sizer_49.Add(sizer_55, 0, wx.ALL|wx.EXPAND, 6)
         self.notebook_1_pane_2.SetSizer(sizer_49)
         sizer_22.Add(self.label_19, 0, 0, 0)
@@ -1008,6 +1014,7 @@ class MyMainFrame(wx.Frame):
         self.upload_queue = []
         
         self.current_report = {}
+        self.list_prefs = []
             
         
         self.Bind(wx.EVT_TIMER, self.OnTimerEvent)
@@ -1866,8 +1873,18 @@ class MyMainFrame(wx.Frame):
             self.current_report[mconst.URL_MONITOR_REPORT_TAB] = current_report
 
     def OnMainNoteBookChanged(self, event): # wxGlade: MyMainFrame.<event_handler>
-        self.LoadSiteInfoReport()
-        self.LoadURLMonitorReport()
+        if self.notebook_1.GetSelection() == mconst.REPORT_TAB:        
+            self.LoadSiteInfoReport()
+            self.LoadURLMonitorReport()
+        
+        if self.notebook_1.GetSelection() == mconst.SITE_CONFIG_TAB:
+            if len(self.list_prefs) == 0:
+                con = sqlite3.connect(self.config.db_path) 
+                con.row_factory = sqlite3.Row 
+                for row in con.execute("select * from moodle_prefs"):
+                    self.list_prefs.append(row)
+                con.close()
+                print self.list_prefs
         
 
     def OnSaveReportButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
@@ -1890,6 +1907,26 @@ class MyMainFrame(wx.Frame):
 
     def OnDocOnlineMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         webbrowser.open(self.config.preferences['link_documentation'])
+
+    def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        print "Event handler `OnGetPrefsButtonClick' not implemented"
+        event.Skip()
+
+    def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        print "Event handler `OnAddPrefButtonClick' not implemented"
+        event.Skip()
+
+    def OnRemovePrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        print "Event handler `OnRemovePrefButtonClick' not implemented"
+        event.Skip()
+
+    def OnButonSavePrefsClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        print "Event handler `OnButonSavePrefsClick' not implemented"
+        event.Skip()
+
+    def OnFilterPrefsText(self, event): # wxGlade: MyMainFrame.<event_handler>
+        print "Event handler `OnFilterPrefsText' not implemented"
+        event.Skip()
 
 # end of class MyMainFrame
 

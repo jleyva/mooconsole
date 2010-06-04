@@ -14,13 +14,17 @@ from time import sleep, strftime, localtime
 from mencrypt import *
 from mconfig import *
 import logging
+import sys
+import string
 
 class MoodleSite(object):
     
     def __init__(self, config, name='', url='', username='', password='',notes='',wstoken='',wsusername='',wspassword='',monitor=0,gatherer=0,db_id=0):
         self.config = config
         self.site_info = {'version':'','release':'','courses':'','users':'','roleassignments':'','courseupdaters':'','posts':'','questions':'','resources':'','lang':''}
-        self.logger = logging.getLogger('MLogger.MLib.MoodleSite')        
+        self.logger = logging.getLogger('MLogger.MLib.MoodleSite')      
+        self.cj = None
+        self.opener = None  
             
         if db_id > 0:
             con = sqlite3.connect(self.config.db_path)    
@@ -288,6 +292,66 @@ class MoodleSite(object):
             self.logger.error('Error updating %s %s',self.name,sys.exc_info())
             return False
 
+    def get_pref(self,pref):
+        
+        if self.cj is None:
+            self.logger.debug('Getting pref %s',pref)
+            self.cj = cookielib.CookieJar()
+            
+            self.opener =  urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+            urllib2.install_opener(self.opener)
+
+            headers = {'User-Agent' : self.config.preferences['user_agent']}
+            url  = self.url + '/login/index.php'
+            params = urllib.urlencode({'username': self.username, 'password': self.password, 'testcookies' : 0})
+            req = urllib2.Request(url, params, headers)
+            try:
+                response = urllib2.urlopen(req)
+            except:
+                self.logger.error('Error Getting pref %s %s',pref,sys.exc_info())
+                return (False, None)
+            
+        
+        req = urllib2.Request(self.url+'/admin/search.php?query='+pref['query'], None)
+
+        try:
+            response = urllib2.urlopen(req).read()
+        except:
+            self.logger.error('Error Getting pref %s %s',pref,sys.exc_info())
+            return (False, None)
+        
+        elements = string.split(response,'class="form-item clearfix"')
+        
+        p_select = re.compile('<option value="([^"]*)"[\s]?(selected)?[^>]*>([^<]+)<\/option>')
+        p_text = re.compile('input type="text"[^>]*value="([^"]*)"')
+        p_textarea = re.compile('<textarea [^>]*>([^<]*)<')
+        p_checkbox = re.compile('<input type="checkbox"([^>]+)>')
+        
+        
+        for el in elements:
+            if el.find('"'+pref['id']+'"') != -1:
+                if el.find('<select'):                    
+                    m = p_select.findall(el)
+                    return (True, ('select',m))
+                
+                if el.find('<input type="text"'):                    
+                    m = p_text.findall(el)
+                    return (True, ('text',m))
+                    
+                if el.find('<textarea'):                    
+                    m = p_textarea.findall(el)
+                    return (True, ('textarea',m))
+                    
+                if el.find('<input type="checkbox"'):                    
+                    m = p_checkbox.findall(el)
+                    if m:
+                        for el2 in m:
+                            if el2.find('"'+pref['id']+'"') != -1:
+                                return (True, ('checkbox',m))
+                            
+        return (False, None)
+
+    
 if __name__ == "__main__":
     #For testing
     
