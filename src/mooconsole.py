@@ -370,6 +370,7 @@ class PreferencesDialog(wx.Dialog):
         self.combo_box_info_gatherer = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN|wx.CB_READONLY)
         self.label_13 = wx.StaticText(self, -1, "URL Monitor:")
         self.combo_box_url_monitor = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.checkbox_alert_sound = wx.CheckBox(self, -1, "Play sound on URL monitor alert")
         self.button_save = wx.Button(self, wx.ID_OK, "Save")
         self.button_cancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
 
@@ -392,6 +393,7 @@ class PreferencesDialog(wx.Dialog):
         grid_sizer_4.Add(self.combo_box_info_gatherer, 0, wx.ALL, 3)
         grid_sizer_4.Add(self.label_13, 0, 0, 0)
         grid_sizer_4.Add(self.combo_box_url_monitor, 0, wx.ALL, 3)
+        grid_sizer_4.Add(self.checkbox_alert_sound, 0, wx.TOP, 3)
         sizer_20.Add(grid_sizer_4, 0, wx.EXPAND, 0)
         sizer_17.Add(sizer_20, 1, wx.ALL|wx.EXPAND, 6)
         sizer_18.Add(self.button_save, 0, 0, 0)
@@ -744,7 +746,7 @@ class MyMainFrame(wx.Frame):
         self.button_remove_pref = wx.Button(self.notebook_1_pane_2, -1, "Remove Selected")
         self.button_remove_all_prefs = wx.Button(self.notebook_1_pane_2, -1, "Remove all")
         self.grid_preferences = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
-        self.button_get_prefs = wx.Button(self.notebook_1_pane_2, -1, "Get preferences")
+        self.button_get_prefs = wx.Button(self.notebook_1_pane_2, -1, "Get preferences from sites\n")
         self.button_10 = wx.Button(self.notebook_1_pane_2, -1, "button_10")
         self.button_clear_grid_prefs = wx.Button(self.notebook_1_pane_2, -1, "Clear Grid")
         self.button_save_prefs = wx.Button(self.notebook_1_pane_2, -1, "Save as spreadsheet")
@@ -1066,6 +1068,8 @@ class MyMainFrame(wx.Frame):
                 c.execute('insert into log (siteid,component,info,data,date) values (?,?,?,?,?)',(site['db_id'],'url_monitor','Error',info,today_date))
                 con.commit()
                 c.close()
+                if self.config.preferences['url_alert_sound'] == '1' and os.path.isfile(self.config.preferences['url_alert_sound_path']):
+                    wx.Sound.PlaySound(self.config.preferences['url_alert_sound_path'], wx.SOUND_ASYNC)
             except:
                 self.logger.debug('Error saving url monitor data: %s',sys.exc_info())
             if change_color:
@@ -1402,10 +1406,20 @@ class MyMainFrame(wx.Frame):
             
             if int(self.config.preferences['url_monitor_time']) == int(val):
                 dlg.combo_box_url_monitor.SetValue(name)
+                
+        if self.config.preferences['url_alert_sound'] == '1':
+            dlg.checkbox_alert_sound.SetValue(True)
+        else:
+            dlg.checkbox_alert_sound.SetValue(False)
                         
         if dlg.ShowModal() == wx.ID_OK:
             self.config.preferences['url_monitor_time'] = dlg.combo_box_url_monitor.GetClientData(dlg.combo_box_url_monitor.GetSelection())
             self.config.preferences['site_gatherer_time'] = dlg.combo_box_info_gatherer.GetClientData(dlg.combo_box_info_gatherer.GetSelection())
+            
+            url_alert = '0'
+            if dlg.checkbox_alert_sound.GetValue() is True:
+                url_alert = '1'
+            self.config.preferences['url_alert_sound'] = url_alert
             
             self.config.save()
         
@@ -1962,12 +1976,14 @@ class MyMainFrame(wx.Frame):
         
     def GetPreferences(self):
         if self.grid_preferences.GetNumberCols() == 0:
-            self.ShowMessage('Please, select one or more sites')
+            self.ShowMessage('Please, select one or more sites from the left list')
             return False
         
         if self.grid_preferences.GetNumberRows() == 0:
-            self.ShowMessage('Please, select one or more preferences')
+            self.ShowMessage('Please, select one or more preferences and click on Add Selected')
             return False
+        
+        self.button_get_prefs.Disable()
         
         prefs_cache = {}
         con = sqlite3.connect(self.config.db_path)
@@ -1991,7 +2007,6 @@ class MyMainFrame(wx.Frame):
             for row_num,pref in enumerate(self.prefs_prefs):
                 status,val = site.get_pref(prefs_cache[pref])
                 if status is True:
-                    print val
                     
                     type,data = val
                     if type == 'select':
@@ -2042,9 +2057,8 @@ class MyMainFrame(wx.Frame):
         self.ShowMessage('Site preferences download complete')
         self.button_get_prefs.Enable()
 
-    def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+    def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>        
         
-        self.button_get_prefs.Disable()
         threading.Thread(target = self.GetPreferences).start()
         
 

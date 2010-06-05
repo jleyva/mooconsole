@@ -57,6 +57,7 @@ class MConfig(object):
         self.db_path = os.path.join(p.path_user_data,'mooconsole.sqlite')
         self.log_path = os.path.join(p.path_user_data,'log.txt')
         self.img_path = os.path.join(p.path_data,'img')
+        self.sound_path = os.path.join(p.path_data,'sound')
         self.tmp_path = p.path_user_data
         self.ws_path = os.path.join(p.path_data,'webservice')
         
@@ -74,6 +75,9 @@ class MConfig(object):
         
         self.preferences['last_monitor_exec'] = '0'
         self.preferences['last_gatherer_exec'] = '0' 
+        
+        self.preferences['url_alert_sound'] = '0'
+        self.preferences['url_alert_sound_path'] = os.path.join(self.sound_path,'alert.wav')
         
         self.preferences['link_documentation'] = 'http://sites.google.com/site/mooconsole/documentation'
         self.preferences['link_website'] = 'http://sites.google.com/site/mooconsole/'
