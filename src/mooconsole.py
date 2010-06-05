@@ -1952,8 +1952,31 @@ class MyMainFrame(wx.Frame):
         webbrowser.open(self.config.preferences['link_documentation'])
 
     def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnGetPrefsButtonClick' not implemented"
-        event.Skip()
+        if self.grid_preferences.GetNumberCols() == 0:
+            self.ShowMessage('Please, select one or more sites')
+            return False
+        
+        if self.grid_preferences.GetNumberRows() == 0:
+            self.ShowMessage('Please, select one or more preferences')
+            return False
+        
+        prefs_cache = {}
+        con = sqlite3.connect(self.config.db_path)
+        con.row_factory = sqlite3.Row
+        for pref in self.prefs_prefs:             
+            for row in con.execute("select * from moodle_prefs where name = ?",(pref,)):
+                prefs_cache[row['name']] = row
+        con.close()
+        
+        for col_num,site_id in enumerate(self.prefs_sites):
+            site = MoodleSite(self.config,db_id=site_id)
+            for row_num,pref in enumerate(self.prefs_prefs):
+                print prefs_cache[pref]
+                val = site.get_pref(prefs_cache[pref])
+                self.grid_preferences.SetCellValue(row_num,col_num,str(val))
+                print row_num, col_num
+                #self.grid_preferences.ForceRefresh()
+                self.Update()
 
     def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         index = self.list_ctrl_preferences.GetFirstSelected()

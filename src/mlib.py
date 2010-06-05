@@ -329,7 +329,7 @@ class MoodleSite(object):
         
         
         for el in elements:
-            if el.find('"'+pref['id']+'"') != -1:
+            if el.find('"'+pref['mid']+'"') != -1:
                 if el.find('<select'):                    
                     m = p_select.findall(el)
                     return (True, ('select',m))
@@ -346,7 +346,7 @@ class MoodleSite(object):
                     m = p_checkbox.findall(el)
                     if m:
                         for el2 in m:
-                            if el2.find('"'+pref['id']+'"') != -1:
+                            if el2.find('"'+pref['mid']+'"') != -1:
                                 return (True, ('checkbox',m))
                             
         return (False, None)
