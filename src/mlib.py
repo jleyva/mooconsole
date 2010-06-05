@@ -294,8 +294,9 @@ class MoodleSite(object):
 
     def get_pref(self,pref):
         
-        if self.cj is None:
-            self.logger.debug('Getting pref %s',pref)
+        self.logger.debug('Getting pref %s',pref['name'])
+        
+        if self.cj is None:            
             self.cj = cookielib.CookieJar()
             
             self.opener =  urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
@@ -330,24 +331,27 @@ class MoodleSite(object):
         
         for el in elements:
             if el.find('"'+pref['mid']+'"') != -1:
-                if el.find('<select'):                    
+                if el.find('<select') != -1:                    
                     m = p_select.findall(el)
                     return (True, ('select',m))
                 
-                if el.find('<input type="text"'):                    
+                if el.find('<input type="text"') != -1:                    
                     m = p_text.findall(el)
                     return (True, ('text',m))
                     
-                if el.find('<textarea'):                    
+                if el.find('<textarea') != -1:                    
                     m = p_textarea.findall(el)
                     return (True, ('textarea',m))
                     
-                if el.find('<input type="checkbox"'):                    
+                if el.find('<input type="checkbox"') != -1:                    
                     m = p_checkbox.findall(el)
                     if m:
                         for el2 in m:
                             if el2.find('"'+pref['mid']+'"') != -1:
-                                return (True, ('checkbox',m))
+                                if el2.find('checked') != -1:
+                                    return (True, ('checkbox','checked'))
+                                else:
+                                    return (True, ('checkbox',''))
                             
         return (False, None)
 

@@ -1971,12 +1971,46 @@ class MyMainFrame(wx.Frame):
         for col_num,site_id in enumerate(self.prefs_sites):
             site = MoodleSite(self.config,db_id=site_id)
             for row_num,pref in enumerate(self.prefs_prefs):
-                print prefs_cache[pref]
-                val = site.get_pref(prefs_cache[pref])
-                self.grid_preferences.SetCellValue(row_num,col_num,str(val))
-                print row_num, col_num
-                #self.grid_preferences.ForceRefresh()
-                self.Update()
+                status,val = site.get_pref(prefs_cache[pref])
+                if status is True:
+                    print val
+                    type,data = val
+                    if type == 'select':
+                        value = ''
+                        options = []
+                        for opt in data:
+                            if opt[1] == 'selected':
+                                value = opt[2]
+                            options.append(opt[2])
+                        editor = gridlib.GridCellChoiceEditor(options,False)
+                        self.grid_preferences.SetCellEditor(row_num,col_num,editor)    
+                        self.grid_preferences.SetCellValue(row_num,col_num,value)
+                    
+                    elif type == 'text':                        
+                        self.grid_preferences.SetCellValue(row_num,col_num,str(data[0]))
+                    
+                    elif type == 'textarea':
+                        text = str(data[0])
+                        self.grid_preferences.SetCellValue(row_num,col_num,text[0:10])                    
+                        
+                    elif type == 'checkbox':                        
+                        
+                        editor = gridlib.GridCellBoolEditor()
+                        renderer =  gridlib.GridCellBoolRenderer()
+                        
+                        final_val = '0'
+                        if data == 'checked':
+                            final_val = '1'
+                            
+                        self.grid_preferences.SetCellEditor(row_num,col_num,editor)
+                        self.grid_preferences.SetCellRenderer(row_num,col_num,renderer)
+                        self.grid_preferences.SetCellValue(row_num,col_num,str(final_val))
+                    
+                    else:                        
+                        self.grid_preferences.SetCellValue(row_num,col_num,str(val))    
+                        
+                    self.Update()
+            self.grid_preferences.AutoSizeColumn(col_num)
 
     def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         index = self.list_ctrl_preferences.GetFirstSelected()
