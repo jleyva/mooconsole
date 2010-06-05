@@ -2027,8 +2027,11 @@ class MyMainFrame(wx.Frame):
                     
                     elif type == 'textarea':
                         text = str(data[0])
-                        self.grid_preferences.SetCellValue(row_num,col_num,text[0:10])
-                        csv_cols.append(text[0:10])                  
+                        text.replace('\n','').replace('\r','')
+                        text = text[0:30]
+                        print text
+                        self.grid_preferences.SetCellValue(row_num,col_num,text)
+                        csv_cols.append(text)                  
                         
                     elif type == 'checkbox':                        
                         
