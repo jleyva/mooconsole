@@ -740,11 +740,13 @@ class MyMainFrame(wx.Frame):
         self.list_ctrl_preferences = wx.ListCtrl(self.notebook_1_pane_2, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
         self.label_26 = wx.StaticText(self.notebook_1_pane_2, -1, "Filter preferences:")
         self.text_ctrl_filter_prefs = wx.TextCtrl(self.notebook_1_pane_2, -1, "")
-        self.button_add_pref = wx.Button(self.notebook_1_pane_2, -1, "Add")
-        self.button_remove_pref = wx.Button(self.notebook_1_pane_2, -1, "Remove")
+        self.button_add_pref = wx.Button(self.notebook_1_pane_2, -1, "Add Selected")
+        self.button_remove_pref = wx.Button(self.notebook_1_pane_2, -1, "Remove Selected")
+        self.button_remove_all_prefs = wx.Button(self.notebook_1_pane_2, -1, "Remove all")
         self.grid_preferences = wx.grid.Grid(self.notebook_1_pane_2, -1, size=(1, 1))
         self.button_get_prefs = wx.Button(self.notebook_1_pane_2, -1, "Get preferences")
         self.button_10 = wx.Button(self.notebook_1_pane_2, -1, "button_10")
+        self.button_clear_grid_prefs = wx.Button(self.notebook_1_pane_2, -1, "Clear Grid")
         self.button_save_prefs = wx.Button(self.notebook_1_pane_2, -1, "Save as spreadsheet")
         self.label_19 = wx.StaticText(self.notebook_1_pane_3, -1, "Only for Moodle 2 sites")
         self.label_16 = wx.StaticText(self.notebook_1_pane_3, -1, "Select a web service")
@@ -797,7 +799,9 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_TEXT, self.OnFilterPrefsText, self.text_ctrl_filter_prefs)
         self.Bind(wx.EVT_BUTTON, self.OnAddPrefButtonClick, self.button_add_pref)
         self.Bind(wx.EVT_BUTTON, self.OnRemovePrefButtonClick, self.button_remove_pref)
+        self.Bind(wx.EVT_BUTTON, self.OnRemoveAllPrefsButtonClick, self.button_remove_all_prefs)
         self.Bind(wx.EVT_BUTTON, self.OnGetPrefsButtonClick, self.button_get_prefs)
+        self.Bind(wx.EVT_BUTTON, self.OnClearGridPrefsButtonClick, self.button_clear_grid_prefs)
         self.Bind(wx.EVT_BUTTON, self.OnButonSavePrefsClick, self.button_save_prefs)
         self.Bind(wx.EVT_COMBOBOX, self.OnComboWSSelected, self.combo_box_ws)
         self.Bind(wx.EVT_BUTTON, self.OnOpenIDataButtonClick, self.button_open_idata)
@@ -862,6 +866,7 @@ class MyMainFrame(wx.Frame):
         sizer_50 = wx.StaticBoxSizer(self.sizer_50_staticbox, wx.HORIZONTAL)
         sizer_51 = wx.BoxSizer(wx.VERTICAL)
         sizer_52 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_54 = wx.BoxSizer(wx.VERTICAL)
         sizer_53 = wx.BoxSizer(wx.VERTICAL)
         sizer_13 = wx.BoxSizer(wx.VERTICAL)
         sizer_36 = wx.StaticBoxSizer(self.sizer_36_staticbox, wx.HORIZONTAL)
@@ -890,6 +895,8 @@ class MyMainFrame(wx.Frame):
         sizer_53.Add(self.button_add_pref, 0, wx.TOP, 10)
         sizer_53.Add(self.button_remove_pref, 0, wx.TOP, 10)
         sizer_52.Add(sizer_53, 1, wx.EXPAND, 0)
+        sizer_54.Add(self.button_remove_all_prefs, 0, wx.TOP|wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 10)
+        sizer_52.Add(sizer_54, 1, wx.EXPAND, 0)
         sizer_51.Add(sizer_52, 1, wx.ALL|wx.EXPAND, 6)
         sizer_50.Add(sizer_51, 1, wx.EXPAND, 0)
         sizer_49.Add(sizer_50, 1, wx.EXPAND, 0)
@@ -897,6 +904,7 @@ class MyMainFrame(wx.Frame):
         sizer_56.Add(self.button_get_prefs, 0, 0, 0)
         sizer_56.Add(self.button_10, 0, 0, 0)
         sizer_55.Add(sizer_56, 1, wx.EXPAND, 0)
+        sizer_55.Add(self.button_clear_grid_prefs, 0, wx.RIGHT, 5)
         sizer_55.Add(self.button_save_prefs, 0, 0, 0)
         sizer_49.Add(sizer_55, 0, wx.ALL|wx.EXPAND, 6)
         self.notebook_1_pane_2.SetSizer(sizer_49)
@@ -1018,6 +1026,7 @@ class MyMainFrame(wx.Frame):
         self.list_prefs = []
         self.prefs_sites = []
         self.prefs_prefs = []
+        self.prefs_csv = []
             
         
         self.Bind(wx.EVT_TIMER, self.OnTimerEvent)
@@ -1919,7 +1928,7 @@ class MyMainFrame(wx.Frame):
                 con = sqlite3.connect(self.config.db_path) 
                 con.row_factory = sqlite3.Row 
                 for row in con.execute("select * from moodle_prefs order by name asc"):
-                    self.list_prefs.insert(row['id'],row)
+                    self.list_prefs.append(row)
                 con.close()
                 
                 self.list_ctrl_preferences.InsertColumn(0,'Preference')
@@ -1950,8 +1959,8 @@ class MyMainFrame(wx.Frame):
 
     def OnDocOnlineMenuClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         webbrowser.open(self.config.preferences['link_documentation'])
-
-    def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        
+    def GetPreferences(self):
         if self.grid_preferences.GetNumberCols() == 0:
             self.ShowMessage('Please, select one or more sites')
             return False
@@ -1968,12 +1977,22 @@ class MyMainFrame(wx.Frame):
                 prefs_cache[row['name']] = row
         con.close()
         
+        self.prefs_csv = []
+        csv_cols = ['Site']
+        for pref in self.prefs_prefs:
+            csv_cols.append(pref)
+        self.prefs_csv.append(csv_cols)
+        
         for col_num,site_id in enumerate(self.prefs_sites):
             site = MoodleSite(self.config,db_id=site_id)
+            csv_cols = []
+            csv_cols.append(site.name)
+            
             for row_num,pref in enumerate(self.prefs_prefs):
                 status,val = site.get_pref(prefs_cache[pref])
                 if status is True:
                     print val
+                    
                     type,data = val
                     if type == 'select':
                         value = ''
@@ -1985,13 +2004,16 @@ class MyMainFrame(wx.Frame):
                         editor = gridlib.GridCellChoiceEditor(options,False)
                         self.grid_preferences.SetCellEditor(row_num,col_num,editor)    
                         self.grid_preferences.SetCellValue(row_num,col_num,value)
+                        csv_cols.append(str(value))
                     
                     elif type == 'text':                        
                         self.grid_preferences.SetCellValue(row_num,col_num,str(data[0]))
+                        csv_cols.append(str(data[0]))
                     
                     elif type == 'textarea':
                         text = str(data[0])
-                        self.grid_preferences.SetCellValue(row_num,col_num,text[0:10])                    
+                        self.grid_preferences.SetCellValue(row_num,col_num,text[0:10])
+                        csv_cols.append(text[0:10])                  
                         
                     elif type == 'checkbox':                        
                         
@@ -2005,12 +2027,26 @@ class MyMainFrame(wx.Frame):
                         self.grid_preferences.SetCellEditor(row_num,col_num,editor)
                         self.grid_preferences.SetCellRenderer(row_num,col_num,renderer)
                         self.grid_preferences.SetCellValue(row_num,col_num,str(final_val))
+                        csv_cols.append(str(final_val))
                     
                     else:                        
-                        self.grid_preferences.SetCellValue(row_num,col_num,str(val))    
+                        self.grid_preferences.SetCellValue(row_num,col_num,str(val))
+                        csv_cols.append(str(val)) 
                         
                     self.Update()
+            
+            
+            self.prefs_csv.append(csv_cols)
             self.grid_preferences.AutoSizeColumn(col_num)
+            
+        self.ShowMessage('Site preferences download complete')
+        self.button_get_prefs.Enable()
+
+    def OnGetPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        
+        self.button_get_prefs.Disable()
+        threading.Thread(target = self.GetPreferences).start()
+        
 
     def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         index = self.list_ctrl_preferences.GetFirstSelected()
@@ -2040,8 +2076,19 @@ class MyMainFrame(wx.Frame):
 
 
     def OnButonSavePrefsClick(self, event): # wxGlade: MyMainFrame.<event_handler>
-        print "Event handler `OnButonSavePrefsClick' not implemented"
-        event.Skip()
+        wildcard = "Spreadsheet format (*.csv)|*.csv" 
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir=os.getcwd(), 
+            defaultFile="", wildcard=wildcard, style=wx.SAVE
+            )
+
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+            writer = csv.writer(open(path, "wb"))
+            writer.writerows(self.prefs_csv)
+        
+        dlg.Destroy()
 
     def OnFilterPrefsText(self, event): # wxGlade: MyMainFrame.<event_handler>
                      
@@ -2053,6 +2100,14 @@ class MyMainFrame(wx.Frame):
             self.PopulateFilterPrefList(self.list_prefs)
         else:
             self.PopulateFilterPrefList(filter(filter_pref,self.list_prefs),True)
+
+    def OnRemoveAllPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        if self.grid_preferences.GetNumberRows() > 0:
+            self.grid_preferences.DeleteRows(0,self.grid_preferences.GetNumberRows())
+            self.prefs_prefs = []
+
+    def OnClearGridPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        self.grid_preferences.ClearGrid()
 
 # end of class MyMainFrame
 
