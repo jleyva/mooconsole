@@ -12,6 +12,7 @@ import wx.grid as gridlib
 import wx.html
 import wx.grid
 
+import xml.sax.saxutils as saxutils
 import sqlite3
 import sys
 from mencrypt import *
@@ -798,6 +799,7 @@ class MyMainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnEditSiteButtonClick, self.button_edit)
         self.Bind(wx.EVT_BUTTON, self.OnRemoveSiteButtonClick, self.button_remove)
         self.Bind(wx.EVT_BUTTON, self.OnButtonLoginClick, self.button_login)
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnListPrefsKeyDown, self.list_ctrl_preferences)
         self.Bind(wx.EVT_TEXT, self.OnFilterPrefsText, self.text_ctrl_filter_prefs)
         self.Bind(wx.EVT_BUTTON, self.OnAddPrefButtonClick, self.button_add_pref)
         self.Bind(wx.EVT_BUTTON, self.OnRemovePrefButtonClick, self.button_remove_pref)
@@ -828,8 +830,7 @@ class MyMainFrame(wx.Frame):
             self.frame_1_statusbar.SetStatusText(frame_1_statusbar_fields[i], i)
         self.text_ctrl_filter.SetFocus()
         self.htmlwindow_info.SetScrollRate(10, 10)
-        self.grid_preferences.CreateGrid(0, 1)
-        self.grid_preferences.SetColLabelValue(0, "")
+        self.grid_preferences.CreateGrid(0, 0)
         self.button_10.Hide()
         self.label_19.SetForegroundColour(wx.Colour(255, 0, 0))
         self.grid_ws.CreateGrid(10, 0)
@@ -1465,7 +1466,8 @@ class MyMainFrame(wx.Frame):
             self.LoadSiteInfoReport()
             self.LoadURLMonitorReport()
             
-        if nb_page == mconst.SITE_CONFIG_TAB:
+        if nb_page == mconst.SITE_CONFIG_TAB or self.grid_preferences.GetNumberCols() == 0:
+            
             if self.grid_preferences.GetNumberCols() > 0:
                 self.grid_preferences.DeleteCols(0,self.grid_preferences.GetNumberCols())
                 
@@ -2026,12 +2028,15 @@ class MyMainFrame(wx.Frame):
                         csv_cols.append(str(data[0]))
                     
                     elif type == 'textarea':
-                        text = str(data[0])
-                        text.replace('\n','').replace('\r','')
-                        text = text[0:30]
-                        print text
-                        self.grid_preferences.SetCellValue(row_num,col_num,text)
-                        csv_cols.append(text)                  
+                        text_val = data[0]
+                        text_val = text_val[0:30]
+                        text_val.replace('\n','')
+                        text_val.replace('\r','')
+                        text_val = saxutils.unescape(text_val)
+                        
+                        self.grid_preferences.SetCellValue(row_num,col_num,str(text_val))
+                        csv_cols.append(text_val)                  
+                                                
                         
                     elif type == 'checkbox':                        
                         
@@ -2051,6 +2056,7 @@ class MyMainFrame(wx.Frame):
                         self.grid_preferences.SetCellValue(row_num,col_num,str(val))
                         csv_cols.append(str(val)) 
                         
+                    self.grid_preferences.ForceRefresh()
                     self.Update()
             
             
@@ -2065,7 +2071,7 @@ class MyMainFrame(wx.Frame):
         threading.Thread(target = self.GetPreferences).start()
         
 
-    def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+    def AddPreferences(self):
         index = self.list_ctrl_preferences.GetFirstSelected()
         while index != -1:
             if self.list_ctrl_preferences.GetItemText(index) not in self.prefs_prefs:
@@ -2073,7 +2079,10 @@ class MyMainFrame(wx.Frame):
                 self.grid_preferences.SetRowLabelValue(self.grid_preferences.GetNumberRows() - 1,self.list_ctrl_preferences.GetItemText(index))
                 self.prefs_prefs.append(self.list_ctrl_preferences.GetItemText(index))
             index = self.list_ctrl_preferences.GetNextSelected(index)
-        self.grid_preferences.SetRowLabelSize(200)
+        self.grid_preferences.SetRowLabelSize(200)       
+
+    def OnAddPrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
+        self.AddPreferences()
 
     def OnRemovePrefButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         
@@ -2126,6 +2135,9 @@ class MyMainFrame(wx.Frame):
     def OnClearGridPrefsButtonClick(self, event): # wxGlade: MyMainFrame.<event_handler>
         self.grid_preferences.ClearGrid()
 
+    def OnListPrefsKeyDown(self, event): # wxGlade: MyMainFrame.<event_handler>
+        self.AddPreferences()
+        
 # end of class MyMainFrame
 
 
