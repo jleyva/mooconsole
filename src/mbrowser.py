@@ -40,7 +40,7 @@ class FileUploaderThread(Thread):
             us = PHPUnserialize.PHPUnserialize()
             dir_data = us.unserialize(b64decode(dir))
             
-            upload_sess_url = url = site.url + '/files/index.php?contextid='+dir_data['contextid']+'&itemid='+dir_data['itemid']+'&filearea='+dir_data['filearea'] +'&filepath='+dir_data['filepath']+'&filename='+dir_data['filename']
+            upload_sess_url = url = site.url + '/files/index.php?contextid='+dir_data['contextid']+'&itemid='+str(dir_data['itemid'])+'&filearea='+dir_data['filearea'] +'&filepath='+dir_data['filepath']+'&filename='+dir_data['filename']
 
             if self.sess_key == '':
                 cj = cookielib.CookieJar()
@@ -77,7 +77,7 @@ class FileUploaderThread(Thread):
                 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),
                                         MultipartPostHandler.MultipartPostHandler)
                 url = site.url + '/files/index.php'
-                params = {'newfile': open(self.queue[i]['file_path'], "rb") ,'sesskey': self.sess_key, 'contextid' : dir_data['contextid'], 'filearea' : dir_data['filearea'], 'filename' : '', 'filepath' : dir_data['filepath'], 'itemid' : dir_data['itemid']}
+                params = {'newfile': open(self.queue[i]['file_path'], "rb") ,'sesskey': self.sess_key, 'contextid' : dir_data['contextid'], 'filearea' : dir_data['filearea'], 'filename' : '', 'filepath' : dir_data['filepath'], 'itemid' : str(dir_data['itemid'])}
                 
                 try:
                     response = opener.open(url,params).read()                
@@ -136,7 +136,7 @@ class MoodleFileBrowser(object):
             sess_key = m.group(1)
 
             url = self.site.url + '/files/index.php'
-            params = urllib.urlencode({'newdirname': name ,'sesskey': sess_key, 'contextid' : dir_data['contextid'], 'filearea' : dir_data['filearea'], 'filename' : '', 'filepath' : dir_data['filepath'], 'itemid' : dir_data['itemid']})
+            params = urllib.urlencode({'newdirname': name ,'sesskey': sess_key, 'contextid' : dir_data['contextid'], 'filearea' : dir_data['filearea'], 'filename' : '', 'filepath' : dir_data['filepath'], 'itemid' : str(dir_data['itemid'])})
                         
             req = urllib2.Request(url, params, headers)
             try:
