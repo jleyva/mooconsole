@@ -1079,7 +1079,10 @@ class MyMainFrame(wx.Frame):
             if change_color:
                 item.SetTextColour(wx.BLACK)
         if change_color:        
-            self.list_ctrl_sites.SetItem(item)
+            try:
+                self.list_ctrl_sites.SetItem(item)
+            except:
+                self.logger.warning('Error setting item text colour: %s',sys.exc_info())
         
     def RunPeriodicProcesses(self):
         if int(self.config.preferences['url_monitor_time']) > 0:

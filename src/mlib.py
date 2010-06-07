@@ -321,7 +321,9 @@ class MoodleSite(object):
             self.logger.error('Error Getting pref %s %s',pref,sys.exc_info())
             return (False, None)
         
-        elements = string.split(response,'class="form-item clearfix"')
+        response = unicode(response,'utf-8')
+        #response.decode('utf-8')
+        elements = response.split(u'class="form-item clearfix"')
         
         p_select = re.compile('<option value="([^"]*)"[\s]?(selected)?[^>]*>([^<]+)<\/option>')
         p_text = re.compile('input type="text"[^>]*value="([^"]*)"')
